@@ -1,0 +1,53 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.pgpass
+pgpass.conf
+secrets/
+postgres-admin.xml
+postgres-app.xml
+
+# Datos personales, modelos, bases, copias y trabajo temporal
+/data/
+/backups/
+/models/
+/.local/
+/work/
+/tmp/
+*.dump
+*.backup
+*.log
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.gguf
+*.safetensors
+
+# Entornos y productos de compilación
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Editor y sistema
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store
