@@ -1,6 +1,12 @@
 # Arquitectura aprobada
 
-Referencia: plan v1.3, páginas 3-7. Este documento describe el sistema previsto; no acredita implementación.
+Referencia: plan v1.3, páginas 3-7. El diagrama describe el sistema completo previsto. Implementado en Fase 0: entrada por URL, interfaz React/Vite/Tailwind, API FastAPI y PostgreSQL con `sources`. Archivos, cola, trabajador, modelos y Supabase siguen pendientes.
+
+## Contratos actuales
+
+`GET /api/health` verifica PostgreSQL y revisión Alembic, devuelve motor detenido/no disponible. `POST /api/sources` guarda URL/título, responde 201 o 409 si existe. `GET /api/sources?limit=20` entrega últimos registros y total (límite 1-100). `GET /api/sources/{id}` recupera una fuente o 404. Error de validación 422; base no disponible 503. Respuestas no incluyen credenciales ni detalles SQL.
+
+Interfaz en `127.0.0.1:5180`, API en `127.0.0.1:8000`. Vite redirige `/api` al backend; no se habilita CORS global. El backend rechaza orígenes externos y hosts no admitidos. No hay endpoint que active IA.
 
 ```mermaid
 flowchart TD

@@ -4,8 +4,8 @@ Referencia: plan v1.3, páginas 8-11. La distribución de fases 2-7 es la consol
 
 | Fase | Entrega | Condición de cierre |
 | --- | --- | --- |
-| 0A, preparación actual | Diagnóstico, herramientas, Git, documentación y diseño de datos | Herramientas verificadas, referencia preservada, secretos excluidos y siguiente paso claro |
-| 0B, pendiente de iniciar | React/Vite/Tailwind, FastAPI, SQLAlchemy, Alembic y primera migración | UI y API arrancan; API consulta PostgreSQL; un registro sobrevive al reinicio; motor detenido |
+| 0A, completada | Diagnóstico, herramientas, Git, documentación y diseño de datos | Herramientas verificadas, referencia preservada y secretos excluidos |
+| 0B, completada | React/Vite/Tailwind, FastAPI, SQLAlchemy, Alembic y primera migración | UI/API conectadas; un registro guardado desde UI sobrevive al reinicio de API/PostgreSQL; motor detenido |
 | 1 | Biblioteca funcional | Enlaces y archivos, duplicados, etiquetas/categorías, filtros, edición y cola visible sin IA |
 | 2 | Audio y motor secuencial | FFmpeg y faster-whisper; iniciar/pausar/detener; recuperación de fallos y exclusión real |
 | 3 | Comprensión audiovisual | Visión y síntesis locales con evidencias; evaluación en vídeos reales y límites explícitos |

@@ -33,14 +33,14 @@ py -3.13 --version
 py -3.13 -m pip --version
 ```
 
-Todavía no se instala FastAPI ni se crea un entorno de dependencias. Al comenzar 0B se creará un entorno aislado y se fijarán dependencias. La IA puede requerir un entorno separado si sus bibliotecas no son compatibles; se resolverá con pruebas en su fase.
+El entorno aislado de backend ya existe bajo el almacenamiento local de ReelMind. Dependencias fijadas en `backend/requirements.lock`, instalables con `scripts/setup.ps1`. Windows puede redirigir AppData hacia la caché local de Codex: `.local/runtime.json` registra la ruta física resuelta de Python y credenciales para que los accesos funcionen fuera del chat. Ese archivo solo contiene rutas y no se versiona. La IA puede requerir un entorno separado; se resolverá con pruebas en su fase.
 
 ## PostgreSQL
 
 PostgreSQL 18.6 está instalado en `C:\Program Files\PostgreSQL\18`, con datos en su subcarpeta `data`, fuera de OneDrive. El servicio `postgresql-x64-18` arranca automáticamente con Windows. Esto inicia solamente la base de datos: no existe todavía un motor de análisis que pueda arrancar.
 
 - Servidor: `localhost`, puerto `5432`; escucha comprobada únicamente en `127.0.0.1` y `::1`.
-- Base vacía: `reelmind`, 0 tablas de aplicación.
+- Base: `reelmind`, con tabla `sources` y control de versión `alembic_version` tras completar Fase 0.
 - Usuario de desarrollo: `reelmind_app`, propietario de esta base, sin superusuario ni permiso para crear otras bases o roles. Se utilizará también para migraciones locales durante el desarrollo; separar permisos de migración y operación al endurecer una distribución futura.
 - Administración: `postgres`, reservado para tareas del servidor.
 - Credenciales: archivos `postgres-app.xml` y `postgres-admin.xml` bajo `%LOCALAPPDATA%\ReelMind\secrets`, cifrados por Windows para el usuario y protegidos con permisos locales. No están en Git ni en OneDrive. El archivo temporal de instalación con contraseña fue eliminado.
@@ -57,7 +57,7 @@ Las credenciales cifradas están ligadas al usuario de Windows y al equipo; no s
 
 ## Evidencia de preparación
 
-Conexión verificada tanto con `reelmind_app` como con `postgres`. Se creó una base temporal de diagnóstico, se insertó un registro, se reinició el servicio y se recuperó el registro; después se eliminó solo esa base temporal. No se aplicaron migraciones de ReelMind.
+En 0A se verificó conexión con `reelmind_app` y `postgres` y persistencia en una base temporal. En 0B se aplicó `0001_sources` tras respaldo y se repitió persistencia sobre un enlace guardado desde la interfaz; el enlace de prueba fue retirado. Ver `docs/verification/phase0.md`.
 
 WinGet instaló Python 3.13.15 correctamente. La descarga de PostgreSQL desde WinGet falló con HTTP 403; se descargó el mismo instalador de EDB directamente, comprobando firma válida de EnterpriseDB y SHA-256 coincidente con el manifiesto. Versión del paquete: `18.6-5`. Hash: `227E2BC08091B4C2B8338C7D61B11D057F895711480B006F90BFCFCD2410A58A`.
 

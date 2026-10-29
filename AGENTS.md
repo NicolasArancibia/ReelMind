@@ -4,7 +4,7 @@
 
 Leer `README.md`, `docs/status.md` y la documentación relevante antes de cambiar archivos. El plan original está en `docs/referencias/ReelMind_Plan_Maestro_v1.3.pdf`. Las instrucciones actuales del usuario prevalecen; registrar las diferencias en `docs/decisions/`.
 
-Actualmente solo se prepara el entorno: no comenzar el frontend, backend ni migraciones de aplicación hasta que el usuario indique continuar con la aplicación. No declarar completa toda la Fase 0 mientras falten el arranque mínimo y su prueba de persistencia.
+El usuario autorizó terminar la Fase 0. El arranque mínimo, primera migración y prueba de persistencia están implementados y verificados; consultar `docs/status.md`. El siguiente hito es Fase 1. No ampliar el trabajo a IA, Supabase ni otros módulos sin que corresponda al encargo actual.
 
 ## Arquitectura y alcance
 

@@ -1,6 +1,8 @@
 # Diseño de datos y migraciones
 
-**Estado: especificación para implementar, no SQL aplicado.** Referencia: plan v1.3, páginas 12-14 y 17. Esta preparación no crea tablas de la aplicación. SQLAlchemy y Alembic materializarán este diseño durante las fases indicadas.
+**Estado: `sources` implementada mediante `0001_sources`; el resto es diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
+
+La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/estado/URL obligatoria, índice único parcial de canonical_url e índices de plataforma y estado/fecha. El título admite 240 caracteres. La API guarda enlaces HTTP/HTTPS sin credenciales, conserva la URL original y usa una normalización conservadora para duplicados. No descarga medios ni crea trabajos.
 
 ## Convenciones SQL
 
@@ -102,7 +104,8 @@ Comenzar con búsqueda vectorial exacta. Separar dimensiones/perfiles en espacio
 
 | Orden | Alcance |
 | --- | --- |
-| 0001 | Fuentes, activos, categorías/etiquetas, asociaciones y cola; fases 0B-1 |
+| 0001_sources (aplicada) | Fuentes, restricciones e índices; Fase 0 |
+| Siguientes revisiones del núcleo | Activos, categorías/etiquetas, asociaciones y cola; Fase 1 |
 | 0002 | Perfiles, transcripciones y segmentos; fase 2 |
 | 0003 | Análisis, recursos y evidencias; fase 3 |
 | 0004 local + migración Supabase independiente | Recibos y bandeja remota; fase 4 |

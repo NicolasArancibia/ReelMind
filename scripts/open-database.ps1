@@ -7,14 +7,14 @@ param(
 # Opens psql using this Windows user's encrypted local credential.
 # The password is never printed and is removed from the process environment on exit.
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'common.ps1')
+$runtime = Get-ReelMindRuntime
 $psqlPath = Join-Path $env:ProgramFiles 'PostgreSQL\18\bin\psql.exe'
 if (-not (Test-Path -LiteralPath $psqlPath)) {
     throw 'PostgreSQL 18 is not installed in the expected location. See docs/setup-windows.md.'
 }
-$secretDir = Join-Path $env:LOCALAPPDATA 'ReelMind\secrets'
-$credentialName = if ($Admin) { 'postgres-admin.xml' } else { 'postgres-app.xml' }
 $databaseName = if ($Admin) { 'postgres' } else { 'reelmind' }
-$credentialPath = Join-Path $secretDir $credentialName
+$credentialPath = if ($Admin) { $runtime.AdminCredentialPath } else { $runtime.CredentialPath }
 if (-not (Test-Path -LiteralPath $credentialPath)) {
     throw 'Local encrypted credential not found. Complete PostgreSQL preparation first.'
 }
