@@ -5,9 +5,11 @@ export interface Source {
   platform: string
   status: string
   created_at: string
+  updated_at: string
+  deleted_at: string | null
 }
 
-export interface SourcePage { items: Source[]; total: number }
+export interface SourcePage { items: Source[]; total: number; active_total: number; trash_total: number; offset: number; limit: number }
 export interface Health {
   status: string
   database: string
@@ -16,9 +18,11 @@ export interface Health {
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  existingSource?: Source
+  constructor(message: string, status: number, existingSource?: Source) {
     super(message)
     this.status = status
+    this.existingSource = existingSource
   }
 }
 
@@ -31,7 +35,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw new ApiError(typeof body?.detail === 'string' ? body.detail : 'No pudimos completar la solicitud. Inténtalo nuevamente.', response.status)
+    throw new ApiError(typeof body?.detail === 'string' ? body.detail : 'No pudimos completar la solicitud. Inténtalo nuevamente.', response.status, body?.existing_source)
   }
   return response.json() as Promise<T>
 }

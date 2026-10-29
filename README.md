@@ -1,6 +1,6 @@
 # ReelMind
 
-Biblioteca personal de vídeos, local en Windows. **Fase 0 completada:** interfaz React/Vite/Tailwind, API FastAPI, PostgreSQL y primera migración funcionando juntos. [Estado y comprobaciones](docs/status.md).
+Biblioteca personal de vídeos, local en Windows. **Fase 0 completada; Fase 1 en curso, bloque 1.1 verificado:** guardar enlaces, editar títulos, recorrer la biblioteca y usar una papelera recuperable. [Estado y comprobaciones](docs/status.md).
 
 ## Abrir y cerrar
 
@@ -9,18 +9,27 @@ Biblioteca personal de vídeos, local en Windows. **Fase 0 completada:** interfa
 3. Pega un enlace, añade un nombre opcional y pulsa **Guardar enlace**. Queda guardado en PostgreSQL; no se descarga ni se analiza el vídeo.
 4. Para cerrar la aplicación, usa **[Detener ReelMind.cmd](Detener%20ReelMind.cmd)**. Cerrar solo la pestaña no detiene los procesos. PostgreSQL continúa como servicio local.
 
-La biblioteca empieza vacía: el enlace usado para las pruebas ya se retiró. El motor permanece detenido y todavía no tiene controles de ejecución.
+Los registros temporales usados para verificar la entrega se retiraron. El motor permanece detenido y todavía no tiene controles de ejecución.
+
+## Gestionar tus enlaces
+
+- Pulsa el **lápiz** de un enlace para editar su título. Puedes dejarlo vacío; la URL original se conserva.
+- Pulsa la **papelera** y confirma para retirarlo de la biblioteca. Sus datos se conservan.
+- Abre **Papelera** y pulsa **Restaurar** para recuperarlo. Si pegas un enlace ya presente en papelera, se ofrece restaurar el original sin duplicarlo.
+- Usa **Anterior/Siguiente** para recorrer páginas de 20 enlaces. Los contadores separan biblioteca y papelera.
+- Si otra ventana cambió el mismo enlace, cierra el cuadro y pulsa **Actualizar biblioteca** antes de intentarlo nuevamente.
 
 ## Qué funciona en esta entrega
 
 - Conexión real con PostgreSQL, comprobación de la revisión de esquema y estado del motor.
 - Guardado de enlaces HTTP/HTTPS, título opcional, plataforma orientativa y fecha.
-- Consulta de los últimos 20 enlaces y contador total. No se descarga contenido externo.
+- Consulta paginada de toda la biblioteca y papelera; contadores de ambas. No se descarga contenido externo.
+- Edición de títulos, eliminación recuperable y restauración con protección contra cambios simultáneos.
 - Detección de URL normalizada repetida; validación de entradas y mensajes de conexión/errores.
 - Inicio y detención de los procesos propios; no se altera otra aplicación que use otros puertos.
 - Persistencia comprobada después de reiniciar la API y PostgreSQL.
 
-La biblioteca completa, archivos de vídeo, edición, eliminación, etiquetas, búsqueda y cola pertenecen a Fase 1 o posteriores. La IA y Supabase no están integrados en esta entrega.
+Archivos de vídeo, etiquetas/categorías, búsqueda/filtros y cola son los siguientes bloques de Fase 1. La IA y Supabase esperan sus fases.
 
 ## Arquitectura conservada
 
@@ -60,13 +69,17 @@ Los servicios escuchan solo en `127.0.0.1`; PostgreSQL en loopback. Los datos vi
 
 ## Documentación
 
+Consultar el **[plan de fases vigente](docs/roadmap.md)** para seguir el proyecto. Se actualiza con el trabajo y las decisiones; el PDF conserva la base original. La **[bitácora](docs/bitacora.md)** registra cada trabajo y [estado](docs/status.md) resume qué funciona y qué sigue.
+
 | Documento | Contenido |
 | --- | --- |
 | [Plan original v1.3](docs/referencias/ReelMind_Plan_Maestro_v1.3.pdf) | Referencia original sin modificar |
 | [AGENTS](AGENTS.md) | Reglas para asistentes y continuidad |
 | [Arquitectura](docs/architecture.md) | Componentes, límites y contratos |
 | [Base de datos](docs/database.md) | Esquema aplicado y diseño futuro |
-| [Hoja de ruta](docs/roadmap.md) | Fases y condiciones de cierre |
+| [Plan de fases vigente](docs/roadmap.md) | Documento vivo: fases, tareas, estados y condiciones de cierre |
+| [Bitácora de trabajo](docs/bitacora.md) | Historial de cambios, pruebas, pendientes y siguientes pasos |
+| [Plan vivo y seguimiento](docs/decisions/0003-plan-vivo.md) | Cómo mantener el plan y el historial |
 | [Decisión inicial](docs/decisions/0001-base-del-proyecto.md) | Base de la preparación |
 | [Arranque mínimo](docs/decisions/0002-arranque-minimo.md) | Alcance y decisiones de Fase 0 |
 | [Modelos](docs/models.md) | Candidatos y evaluación futura |
@@ -74,6 +87,8 @@ Los servicios escuchan solo en `127.0.0.1`; PostgreSQL en loopback. Los datos vi
 | [Operación](docs/operations.md) | Inicio, respaldos y recuperación |
 | [Entorno Windows](docs/setup-windows.md) | Herramientas y preparación |
 | [Verificación Fase 0](docs/verification/phase0.md) | Evidencia y limitaciones de las pruebas |
+| [Gestión de enlaces, decisión](docs/decisions/0004-gestion-de-enlaces.md) | Papelera, paginación y concurrencia |
+| [Verificación Fase 1.1](docs/verification/phase1-1.md) | 34 pruebas, recorrido de interfaz y persistencia |
 | [Estado](docs/status.md) | Resultado actual y siguiente paso |
 
-Antes de retomar otra sesión, leer AGENTS, README y estado. No confundir los módulos previstos en el plan con funciones ya implementadas.
+Antes de retomar otra sesión, leer AGENTS, README, plan de fases y estado. Al cerrar cada trabajo, actualizar el seguimiento según AGENTS. No confundir los módulos previstos en el plan con funciones ya implementadas.

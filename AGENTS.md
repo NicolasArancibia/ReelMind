@@ -2,9 +2,9 @@
 
 ## Contexto de inicio
 
-Leer `README.md`, `docs/status.md` y la documentación relevante antes de cambiar archivos. El plan original está en `docs/referencias/ReelMind_Plan_Maestro_v1.3.pdf`. Las instrucciones actuales del usuario prevalecen; registrar las diferencias en `docs/decisions/`.
+Leer `README.md`, `docs/roadmap.md`, `docs/status.md` y la documentación relevante antes de cambiar archivos. El plan vigente editable está en `docs/roadmap.md`; el original se conserva en `docs/referencias/ReelMind_Plan_Maestro_v1.3.pdf`. Las instrucciones actuales del usuario prevalecen; registrar las diferencias en `docs/decisions/` y reflejarlas en el plan vigente.
 
-El usuario autorizó terminar la Fase 0. El arranque mínimo, primera migración y prueba de persistencia están implementados y verificados; consultar `docs/status.md`. El siguiente hito es Fase 1. No ampliar el trabajo a IA, Supabase ni otros módulos sin que corresponda al encargo actual.
+El usuario autorizó comenzar la Fase 1. Fase 0 y bloque 1.1 (gestión de enlaces, papelera y paginación) están implementados y verificados; consultar `docs/status.md`. Fase 1 sigue en curso: el siguiente bloque es 1.2, archivos de vídeo. No ampliar el trabajo a IA, Supabase ni otros módulos sin que corresponda al encargo actual.
 
 ## Arquitectura y alcance
 
@@ -32,5 +32,5 @@ El usuario autorizó terminar la Fase 0. El arranque mínimo, primera migración
 
 - Probar la lógica importante, integridad, persistencia, concurrencia y recuperación según la fase. Para documentación, comprobar enlaces y consistencia; no crear pruebas que repitan el texto.
 - Usar pruebas reales antes de declarar una herramienta o funcionalidad operativa.
-- Al terminar, actualizar `docs/status.md` con cambios, evidencias, pendientes y siguiente paso. Mantener README y decisiones sincronizados.
+- Al terminar cada trabajo, actualizar `docs/status.md` y añadir una entrada fechada a `docs/bitacora.md` con cambios, evidencias, pendientes y siguiente paso, incluso si queda parcial o bloqueado. Actualizar tareas y estados en `docs/roadmap.md` cuando cambien; marcar completado solo lo verificado. Mantener README y decisiones sincronizados. No modificar el PDF original para reflejar cambios del plan.
 - Explicar resultados al usuario en español sencillo; distinguir implementado, propuesto y pendiente.

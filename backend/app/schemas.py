@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, TypeAdapter, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, TypeAdapter, field_validator
 
 url_adapter = TypeAdapter(HttpUrl)
 
@@ -25,6 +25,21 @@ class SourceCreate(BaseModel):
         return value or None
 
 
+class SourceMutation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_updated_at: AwareDatetime
+
+
+class SourceUpdate(SourceMutation):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    title: str | None = Field(max_length=240)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str | None) -> str | None:
+        return value or None
+
+
 class SourceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -33,8 +48,14 @@ class SourceRead(BaseModel):
     title: str | None
     status: str
     created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None
 
 
 class SourcePage(BaseModel):
     items: list[SourceRead]
     total: int
+    active_total: int
+    trash_total: int
+    offset: int
+    limit: int

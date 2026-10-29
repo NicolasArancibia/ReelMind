@@ -1,10 +1,12 @@
 # Arquitectura aprobada
 
-Referencia: plan v1.3, páginas 3-7. El diagrama describe el sistema completo previsto. Implementado en Fase 0: entrada por URL, interfaz React/Vite/Tailwind, API FastAPI y PostgreSQL con `sources`. Archivos, cola, trabajador, modelos y Supabase siguen pendientes.
+Referencia: plan v1.3, páginas 3-7. El diagrama describe el sistema completo previsto. Implementado hasta Fase 1.1: entrada por URL, edición de título, papelera/restauración, paginación, interfaz React/Vite/Tailwind, API FastAPI y PostgreSQL con `sources`. Archivos, clasificación, cola, trabajador, modelos y Supabase siguen pendientes.
 
 ## Contratos actuales
 
-`GET /api/health` verifica PostgreSQL y revisión Alembic, devuelve motor detenido/no disponible. `POST /api/sources` guarda URL/título, responde 201 o 409 si existe. `GET /api/sources?limit=20` entrega últimos registros y total (límite 1-100). `GET /api/sources/{id}` recupera una fuente o 404. Error de validación 422; base no disponible 503. Respuestas no incluyen credenciales ni detalles SQL.
+`GET /api/health` verifica PostgreSQL y revisión Alembic, devuelve motor detenido/no disponible. `POST /api/sources` guarda URL/título, responde 201 o 409 si existe; si está en papelera incluye `existing_source` para ofrecer restauración. `GET /api/sources?limit=20&offset=0&view=library` entrega página y contadores activos/papelera; `view=trash` consulta eliminados, límite 1–100. `GET /api/sources/{id}` recupera una fuente activa o 404.
+
+`PATCH /api/sources/{id}` recibe título y `expected_updated_at`. `DELETE /api/sources/{id}` recibe un cuerpo JSON con `expected_updated_at` y mueve a papelera; `POST /api/sources/{id}/restore` recibe lo mismo y restaura. Devuelven fuente actualizada con `updated_at`/`deleted_at`. Bloqueo por fila y versión previa; conflicto 409, validación 422, fuente ausente 404 y base no disponible 503. Respuestas no incluyen credenciales ni detalles SQL. No existe borrado físico público. [Detalle de decisiones](decisions/0004-gestion-de-enlaces.md).
 
 Interfaz en `127.0.0.1:5180`, API en `127.0.0.1:8000`. Vite redirige `/api` al backend; no se habilita CORS global. El backend rechaza orígenes externos y hosts no admitidos. No hay endpoint que active IA.
 

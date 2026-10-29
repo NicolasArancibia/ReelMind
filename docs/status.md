@@ -1,16 +1,20 @@
 # Estado del proyecto
 
-Actualizado: 2026-10-28, America/Santiago.
+Actualizado: 2026-10-29, America/Santiago.
 
 ## Resultado actual
 
-**Fase 0 completada y verificada.** El usuario autorizó continuar desde la preparación y cerrar el arranque mínimo. Hay interfaz React/Vite/Tailwind, backend FastAPI, SQLAlchemy, Alembic y PostgreSQL conectados. El próximo trabajo es Fase 1; no se inició IA ni Supabase.
+**Fase 0 completada; Fase 1 en curso.** El usuario autorizó comenzar Fase 1. Bloque **1.1 completado y verificado**: editar títulos, papelera/restauración y paginación. El próximo bloque es 1.2, archivos de vídeo; no se inició IA ni Supabase.
 
 ## Implementado
 
-- Pantalla local para guardar un enlace y título opcional, ver últimos registros y contador; mensajes de validación, duplicados y desconexión.
-- API de salud, alta, listado y consulta por ID. Nunca descarga el enlace ni inicia análisis.
-- Migración `0001_sources` aplicada: tabla `sources`, restricciones, índices y registro Alembic. Resto del esquema previsto pendiente por fases.
+Seguimiento: [plan de fases vigente](roadmap.md) y [bitácora de trabajo](bitacora.md). El PDF se conserva como base histórica; los cambios se registran en el plan y en decisiones.
+
+Último trabajo (2026-10-29): gestión de enlaces 1.1, protección frente a ediciones concurrentes, 34 pruebas aprobadas y recorrido en navegador. [Decisión 0004](decisions/0004-gestion-de-enlaces.md) y [evidencias](verification/phase1-1.md). El plan vivo y la bitácora se mantienen según [decisión 0003](decisions/0003-plan-vivo.md).
+
+- Pantalla local para guardar enlaces, editar títulos, paginar toda la biblioteca y consultar la papelera; eliminación recuperable, restauración y contadores separados.
+- API de salud, alta, listado paginado, consulta por ID, edición, eliminación lógica y restauración. Control de versiones y bloqueo de fila para evitar sobrescribir cambios de otra ventana. Nunca descarga el enlace ni inicia análisis.
+- Migración `0001_sources` aplicada y sin cambios: 1.1 usa `deleted_at` y `updated_at` existentes; no necesitó otra revisión. `alembic check` sin diferencias. Resto del esquema previsto pendiente por bloques.
 - Accesos `Iniciar ReelMind.cmd` y `Detener ReelMind.cmd`; procesos ocultos y cierre únicamente de los procesos creados por este proyecto.
 - Interfaz `http://127.0.0.1:5180`; API `http://127.0.0.1:8000`. El puerto 5173 pertenece a otro proyecto y no se modificó.
 - Credenciales PostgreSQL cifradas fuera de Git/OneDrive; rutas resueltas en `.local/runtime.json` para instalaciones redirigidas por Windows. No se creó `.env` con contraseña.
@@ -18,6 +22,18 @@ Actualizado: 2026-10-28, America/Santiago.
 - Git local en `main`, sin remoto. El PDF original sigue intacto en `docs/referencias/`.
 
 ## Comprobaciones
+
+### Bloque 1.1, 2026-10-29
+
+- **34 pruebas aprobadas** (19 existentes + 15 nuevas), con esquemas PostgreSQL aislados. Edición persistente, papelera, restauración idempotente, duplicados, páginas con fechas iguales, ajuste de última página, validaciones y concurrencia real entre dos peticiones.
+- Compilación TypeScript/Vite aprobada; esquema sin diferencias. Ninguna dependencia nueva.
+- Recorrido en navegador: edición, cancelación, papelera, restauración normal y desde duplicado, navegación 1–20/21 con registros temporales identificados. Persistencia comprobada tras reiniciar frontend/API; mismo ID, título editado y estado de papelera.
+- Revisión de escritorio y móvil de 390 px sin desbordamiento; foco de edición y cierre con Escape comprobados. Registros de prueba retirados; aplicación iniciada con motor detenido.
+- Se reemplazó una credencial local de aplicación mostrada por un traceback de la primera prueba bloqueada por el entorno restringido. Copia cifrada actualizada; salida de pytest ajustada a traceback corto. Ver decisión 0004, sin secretos.
+
+### Evidencias previas de Fase 0
+
+Las comprobaciones siguientes corresponden al cierre de Fase 0 del 2026-10-28; se conservan como evidencia histórica. En 1.1 se repitió la suite automatizada, pero no el reinicio del servicio PostgreSQL.
 
 - **19 pruebas aprobadas** con esquemas temporales PostgreSQL aislados, retirados al terminar. Guardado visible en otra conexión, duplicados, validación, procedencia de plataforma, motor detenido, migración repetida, restricciones de origen/host, errores sin secretos y configuración segura.
 - `npm ci` y compilación TypeScript/Vite satisfactorias. `pip check` sin dependencias rotas. `alembic check` sin diferencias entre modelos y esquema.
@@ -31,7 +47,7 @@ Aviso no bloqueante: Starlette advierte que el adaptador de pruebas `httpx` est�
 
 ## Límites y siguiente paso
 
-Fase 1: biblioteca funcional, archivos, edición/eliminación, categorías/etiquetas, filtros y cola visible. Incorporar tablas mediante nuevas migraciones; no editar `0001_sources` ya aplicada. La deduplicación actual conserva parámetros/fragmentos: no equivale todavía a reconocer todas las variantes de una URL de plataforma.
+Siguiente: **1.2, importación y almacenamiento local de archivos de vídeo**. Después, categorías/etiquetas, búsqueda/filtros y cola visible. Fase 1 no está completa. Incorporar tablas mediante nuevas migraciones; no editar `0001_sources` ya aplicada. La deduplicación actual conserva parámetros/fragmentos: no equivale todavía a reconocer todas las variantes de una URL de plataforma. Papelera sin purga; la paginación no congela datos entre ventanas distintas.
 
 pgvector: ruta nativa de Windows documentada, aún no instalado ni ensayado. FFmpeg/transcripción, modelos locales, Supabase y chat semántico esperan sus fases. La restauración completa de la biblioteca y sus futuros medios sigue pendiente; el respaldo previo y prueba de reinicio no sustituyen ese ensayo.
 

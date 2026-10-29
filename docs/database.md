@@ -1,6 +1,6 @@
 # Diseño de datos y migraciones
 
-**Estado: `sources` implementada mediante `0001_sources`; el resto es diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
+**Estado: `sources` implementada mediante `0001_sources`; Fase 1.1 usa su edición, papelera y restauración sin cambio de esquema. El resto es diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
 
 La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/estado/URL obligatoria, índice único parcial de canonical_url e índices de plataforma y estado/fecha. El título admite 240 caracteres. La API guarda enlaces HTTP/HTTPS sin credenciales, conserva la URL original y usa una normalización conservadora para duplicados. No descarga medios ni crea trabajos.
 
@@ -9,7 +9,7 @@ La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/
 - Identidades `uuid PRIMARY KEY DEFAULT gen_random_uuid()`; campos obligatorios `NOT NULL`; fechas `timestamptz NOT NULL DEFAULT now()`.
 - Texto libre `text`; tamaños e intervalos `bigint`; contadores `integer`; datos variables `jsonb`. No convertir todo el modelo en JSONB.
 - Nombres de restricciones e índices explícitos para migraciones reproducibles. Fechas internas UTC; presentación según zona del usuario.
-- `updated_at` se actualizará explícitamente en cada mutación; `DEFAULT now()` solo inicializa y no actualiza por sí mismo.
+- `updated_at` se actualiza explícitamente en cada mutación de 1.1 con `clock_timestamp()` después del bloqueo por fila; `DEFAULT now()` solo inicializa. La API exige la versión anterior para evitar cambios perdidos entre ventanas.
 - Borrado lógico con `deleted_at timestamptz NULL` en fuentes. La purga de archivos será una operación separada; no aplicar cascadas globales a información citada.
 - Los estados siguientes son un diseño propuesto a fijar en migraciones con `CHECK`; calidad y estado operativo no se confunden.
 
