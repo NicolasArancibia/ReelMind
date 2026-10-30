@@ -37,7 +37,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $ReelMindRoot 'frontend\dist\index.h
 $records = @()
 $previousPassword = $env:PGPASSWORD
 $previousUser = $env:PGUSER
+$previousDataRoot = $env:REELMIND_DATA_ROOT
 try {
+    if (-not $env:REELMIND_DATA_ROOT) { $env:REELMIND_DATA_ROOT = Get-ReelMindDataRoot $runtime }
     $credential = Import-Clixml -LiteralPath $runtime.CredentialPath
     $env:PGPASSWORD = $credential.GetNetworkCredential().Password
     $env:PGUSER = $credential.UserName
@@ -74,5 +76,6 @@ try {
 } finally {
     $env:PGPASSWORD = $previousPassword
     $env:PGUSER = $previousUser
+    $env:REELMIND_DATA_ROOT = $previousDataRoot
     $credential = $null
 }

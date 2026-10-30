@@ -1,5 +1,12 @@
 $ReelMindRoot = Split-Path -Parent $PSScriptRoot
 
+function Get-ReelMindDataRoot($runtime) {
+    if ($runtime.DataRoot) { return $runtime.DataRoot }
+    # Derive from the persisted runtime, not a possibly redirected LOCALAPPDATA.
+    $runtimeRoot = Split-Path -Parent (Split-Path -Parent $runtime.CredentialPath)
+    return Join-Path $runtimeRoot 'data'
+}
+
 function Get-ReelMindRuntime {
     $runtimeFile = Join-Path $ReelMindRoot '.local\runtime.json'
     if (Test-Path -LiteralPath $runtimeFile) {

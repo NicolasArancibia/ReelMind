@@ -1,6 +1,11 @@
 export interface Source {
   id: string
-  original_url: string
+  original_url: string | null
+  source_type: 'url' | 'file'
+  tags: Label[]
+  categories: Label[]
+  assets: { id: string; original_name: string; file: { size_bytes: number; checksum: string; mime_type: string } }[]
+  job: { id: string; status: 'pending' | 'cancelled'; created_at: string } | null
   title: string | null
   platform: string
   status: string
@@ -9,7 +14,9 @@ export interface Source {
   deleted_at: string | null
 }
 
-export interface SourcePage { items: Source[]; total: number; active_total: number; trash_total: number; offset: number; limit: number }
+export interface Label { id: string; name: string }
+export interface Organization { tags: Label[]; categories: Label[] }
+export interface SourcePage { items: Source[]; total: number; active_total: number; trash_total: number; queue_total: number; offset: number; limit: number }
 export interface Health {
   status: string
   database: string
@@ -29,7 +36,7 @@ export class ApiError extends Error {
 export async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response
   try {
-    response = await fetch(`/api${path}`, { ...options, signal: AbortSignal.timeout(10000) })
+    response = await fetch(`/api${path}`, { ...options, signal: options?.signal ?? AbortSignal.timeout(10000) })
   } catch {
     throw new ApiError('No pudimos conectar con tu biblioteca local. Comprueba que ReelMind esté iniciado y vuelve a intentarlo.', 0)
   }

@@ -1,4 +1,6 @@
 from functools import lru_cache
+from pathlib import Path
+import os
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,9 +19,13 @@ class Settings(BaseSettings):
         default=False, validation_alias="REELMIND_PROCESSING_AUTOSTART"
     )
     max_heavy_tasks: int = Field(default=1, validation_alias="REELMIND_MAX_HEAVY_TASKS")
+    data_root: Path = Field(default_factory=lambda: Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local")) / "ReelMind" / "data", validation_alias="REELMIND_DATA_ROOT")
+    max_upload_bytes: int = Field(default=2 * 1024**3, ge=1, validation_alias="REELMIND_MAX_UPLOAD_BYTES")
 
     @model_validator(mode="after")
     def local_manual_only(self):
+        if not self.data_root.is_absolute():
+            raise ValueError("La raíz de datos debe ser absoluta.")
         if self.pg_host not in {"localhost", "127.0.0.1", "::1"}:
             raise ValueError("La base debe ser local en esta fase.")
         if self.processing_autostart or self.max_heavy_tasks != 1:

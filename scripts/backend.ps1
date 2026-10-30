@@ -11,8 +11,10 @@ if (-not (Test-Path -LiteralPath $pythonPath)) {
 }
 $previousPassword = $env:PGPASSWORD
 $previousUser = $env:PGUSER
+$previousDataRoot = $env:REELMIND_DATA_ROOT
 $commandExit = 1
 try {
+    if (-not $env:REELMIND_DATA_ROOT) { $env:REELMIND_DATA_ROOT = Get-ReelMindDataRoot $runtime }
     if (-not $env:PGPASSWORD) {
         $credential = Import-Clixml -LiteralPath $runtime.CredentialPath
         $env:PGPASSWORD = $credential.GetNetworkCredential().Password
@@ -45,6 +47,7 @@ try {
 } finally {
     $env:PGPASSWORD = $previousPassword
     $env:PGUSER = $previousUser
+    $env:REELMIND_DATA_ROOT = $previousDataRoot
     $credential = $null
 }
 exit $commandExit

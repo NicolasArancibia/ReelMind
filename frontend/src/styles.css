@@ -40,6 +40,22 @@ button, input, a { outline-offset: 5px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 .source-link { display: flex; align-items: center; gap: 13px; min-width: 0; flex: 1; }
+.source-row { flex-wrap: wrap; }
+.source-labels { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; order: 2; font-size: 11px; color: #a7b9ad; }
+.source-labels span { background: #203c2b; padding: 3px 7px; border-radius: 5px; overflow-wrap: anywhere; }
+.source-labels small { padding: 3px 0; }
+.row-actions { flex-wrap: wrap; }
+.import-video { margin-top: 24px; border-top: 1px solid #304437; padding-top: 20px; }
+.import-video input { max-width: 100%; min-width: 0; font-size: 12px; }
+.library-filters { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 20px; }
+.library-filters label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: #b3c9bb; min-width: 0; }
+.library-filters input, .library-filters select { background: #101a13; color: #e1eae4; border: 1px solid #405647; border-radius: 6px; padding: 10px; min-width: 0; max-width: 100%; font-size: 12px; }
+.library-filters select { width: 150px; }
+.search-field { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.search-field label { width: 100%; }.search-field input { flex: 1; }
+.asset-list { display: grid; gap: 12px; font-size: 13px; color: #ace9c6; overflow-wrap: anywhere; }
+.source-dialog label:not(:first-child) { margin-top: 15px; }
+@media (max-width: 650px) { .source-row .row-actions { width: 100%; }.source-link { flex-basis: 100%; }.library-filters>label { flex: 1 1 40%; }.library-filters select { width: 100%; } }
 .source-link .source-arrow { flex-shrink: 0; }
 .row-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .row-actions .icon-button { display: grid; place-items: center; min-width: 36px; min-height: 36px; }

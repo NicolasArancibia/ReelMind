@@ -25,6 +25,8 @@ postgres-app.xml
 *.mov
 *.mkv
 *.webm
+*.avi
+*.m4v
 *.mp3
 *.wav
 *.gguf

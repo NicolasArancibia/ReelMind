@@ -4,17 +4,17 @@ Actualizado: 2026-10-29, America/Santiago.
 
 Este es el **plan vigente y editable**. Se actualiza a medida que trabajamos y tomamos decisiones. El [PDF v1.3](referencias/ReelMind_Plan_Maestro_v1.3.pdf) se conserva como base histórica. Las instrucciones actuales del usuario prevalecen; los cambios de alcance o arquitectura se registran en `docs/decisions/` y se reflejan aquí.
 
-**Situación actual: Fase 0 completada; Fase 1 en curso, bloque 1.1 completado y verificado.** Siguiente bloque: 1.2, archivos de vídeo. Las fases 2-7 conservan la distribución propuesta a partir del PDF y podrán ajustarse con pruebas. Una función planificada no está implementada por aparecer aquí.
+**Situación actual: Fases 0 y 1 completadas y verificadas.** Siguiente fase: 2, audio y motor manual; aún no iniciada. Las fases 2-7 conservan la distribución propuesta a partir del PDF y podrán ajustarse con pruebas. Una función planificada no está implementada por aparecer aquí.
 
 ## Vista general
 
-Fase 1 en curso; fases 2-7 pendientes. Estados de trabajo: pendiente, en curso, bloqueado (con motivo), completado y verificado, o aplazado (con decisión).
+Fase 1 completada; fases 2-7 pendientes. Estados de trabajo: pendiente, en curso, bloqueado (con motivo), completado y verificado, o aplazado (con decisión).
 
 | Fase | Entrega | Condición de cierre |
 | --- | --- | --- |
 | 0A, completada | Diagnóstico, herramientas, Git, documentación y diseño de datos | Herramientas verificadas, referencia preservada y secretos excluidos |
 | 0B, completada | React/Vite/Tailwind, FastAPI, SQLAlchemy, Alembic y primera migración | UI/API conectadas; un registro guardado desde UI sobrevive al reinicio de API/PostgreSQL; motor detenido |
-| 1, en curso | Biblioteca funcional; 1.1 completado | Enlaces y archivos, duplicados, etiquetas/categorías, filtros, edición y cola visible sin IA |
+| 1, completada | Biblioteca funcional; 1.1–1.5 verificados | Enlaces y archivos, duplicados, etiquetas/categorías, filtros, edición y cola visible sin IA |
 | 2 | Audio y motor secuencial | FFmpeg y faster-whisper; iniciar/pausar/detener; recuperación de fallos y exclusión real |
 | 3 | Comprensión audiovisual | Visión y síntesis locales con evidencias; evaluación en vídeos reales y límites explícitos |
 | 4 | Bandeja Supabase | Captura móvil pegando enlaces, RLS y sincronización idempotente; fallo entre commit y acuse sin duplicar |
@@ -47,17 +47,17 @@ Evidencias: [verificación de Fase 0](verification/phase0.md), 19 pruebas aproba
 
 ## Fase 1 — Biblioteca funcional
 
-**En curso.** Orden de trabajo, ajustable durante la implementación:
+**Completada y verificada el 2026-10-29.** [Evidencias de cierre](verification/phase1.md): 57 pruebas, flujo de interfaz y persistencia tras reiniciar frontend/API.
 
 - [x] **1.1 Gestión de enlaces:** editar títulos, papelera/restauración y recorrer toda la biblioteca; validación, duplicados y protección contra cambios simultáneos. [Evidencias](verification/phase1-1.md).
-- [ ] **1.2 Archivos de vídeo:** importar y almacenar localmente, asociar con su fuente y detectar duplicados.
-- [ ] **1.3 Organización:** categorías, etiquetas, búsqueda por texto y filtros.
-- [ ] **1.4 Pendientes:** cola visible y persistente para el análisis futuro, sin ejecutar IA.
-- [ ] **1.5 Cierre:** verificar el recorrido completo, persistencia, integridad y recuperación de fallos; documentar evidencias.
+- [x] **1.2 Archivos de vídeo:** importar y almacenar localmente, asociar con su fuente y detectar duplicados.
+- [x] **1.3 Organización:** categorías, etiquetas, búsqueda por texto y filtros.
+- [x] **1.4 Pendientes:** cola visible y persistente para el análisis futuro, sin ejecutar IA.
+- [x] **1.5 Cierre:** verificar el recorrido completo, persistencia, integridad y recuperación de fallos; documentar evidencias.
 
 **Para cerrar:** gestionar enlaces y archivos desde la interfaz; conservar cambios y asociaciones tras reiniciar. Eliminación con comportamiento claro, sin borrar archivos ajenos ni perder datos por fallos parciales. Añadir nuevas migraciones sin modificar `0001_sources`.
 
-**Decisión adoptada para 1.1:** [papelera recuperable, edición y paginación](decisions/0004-gestion-de-enlaces.md), sin purga ni cambio de URL original. **Pendiente para los próximos bloques:** raíz de datos configurable, formatos/tamaños admitidos, política de copia y eliminación de archivos, reglas adicionales de duplicados por plataforma y organización de etiquetas/categorías. Resolver antes de implementar cada comportamiento. No depende de descargar automáticamente vídeos de Instagram.
+**Decisión adoptada para 1.1:** [papelera recuperable, edición y paginación](decisions/0004-gestion-de-enlaces.md), sin purga ni cambio de URL original. **Decisiones de cierre:** [ADR 0005](decisions/0005-cierre-biblioteca.md): raíz configurable fuera de OneDrive, copias por SHA-256 con múltiples procedencias, límite inicial de 2 GiB, papelera sin purga, categorías planas, etiquetas reutilizables y cola FIFO detenida. Las jerarquías de categorías y edición global del catálogo quedan aplazadas. Se mantiene normalización conservadora de URL; no se incorporan reglas de equivalencia por plataforma sin verificarlas. No depende de descargar automáticamente vídeos de Instagram.
 
 ## Fase 2 — Audio y motor secuencial
 

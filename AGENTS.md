@@ -4,7 +4,7 @@
 
 Leer `README.md`, `docs/roadmap.md`, `docs/status.md` y la documentación relevante antes de cambiar archivos. El plan vigente editable está en `docs/roadmap.md`; el original se conserva en `docs/referencias/ReelMind_Plan_Maestro_v1.3.pdf`. Las instrucciones actuales del usuario prevalecen; registrar las diferencias en `docs/decisions/` y reflejarlas en el plan vigente.
 
-El usuario autorizó comenzar la Fase 1. Fase 0 y bloque 1.1 (gestión de enlaces, papelera y paginación) están implementados y verificados; consultar `docs/status.md`. Fase 1 sigue en curso: el siguiente bloque es 1.2, archivos de vídeo. No ampliar el trabajo a IA, Supabase ni otros módulos sin que corresponda al encargo actual.
+El usuario autorizó terminar la Fase 1. Fases 0 y 1 (biblioteca, archivos, organización, filtros y cola detenida) están completadas y verificadas; consultar `docs/status.md` y `docs/verification/phase1.md`. La siguiente fase es 2, audio y motor manual, todavía no iniciada. No ampliar el trabajo a IA, Supabase ni otros módulos sin que corresponda al encargo actual.
 
 ## Arquitectura y alcance
 

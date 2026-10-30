@@ -14,7 +14,7 @@ from app.main import app
 
 
 @pytest.fixture
-def database():
+def database(request):
     """Each test migrates an isolated, randomly named schema in local PostgreSQL.
 
     Never clear public tables or replace the user's database.
@@ -31,13 +31,19 @@ def database():
     try:
         with engine.connect() as connection:
             config.attributes["connection"] = connection
-            command.upgrade(config, "head")
+            command.upgrade(config, getattr(request, "param", "head"))
         yield engine, config
     finally:
         engine.dispose()
         with admin_engine.begin() as connection:
             connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin_engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def media_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(get_settings(), "data_root", tmp_path)
+    return tmp_path
 
 
 @pytest.fixture

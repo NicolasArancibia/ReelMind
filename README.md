@@ -1,6 +1,6 @@
 # ReelMind
 
-Biblioteca personal de vídeos, local en Windows. **Fase 0 completada; Fase 1 en curso, bloque 1.1 verificado:** guardar enlaces, editar títulos, recorrer la biblioteca y usar una papelera recuperable. [Estado y comprobaciones](docs/status.md).
+Biblioteca personal de vídeos, local en Windows. **Fases 0 y 1 completadas y verificadas:** enlaces y archivos de vídeo, categorías/etiquetas, búsqueda/filtros, papelera y cola persistente sin IA. [Estado y comprobaciones](docs/status.md).
 
 ## Abrir y cerrar
 
@@ -11,7 +11,7 @@ Biblioteca personal de vídeos, local en Windows. **Fase 0 completada; Fase 1 en
 
 Los registros temporales usados para verificar la entrega se retiraron. El motor permanece detenido y todavía no tiene controles de ejecución.
 
-## Gestionar tus enlaces
+## Gestionar tu biblioteca
 
 - Pulsa el **lápiz** de un enlace para editar su título. Puedes dejarlo vacío; la URL original se conserva.
 - Pulsa la **papelera** y confirma para retirarlo de la biblioteca. Sus datos se conservan.
@@ -29,7 +29,15 @@ Los registros temporales usados para verificar la entrega se retiraron. El motor
 - Inicio y detención de los procesos propios; no se altera otra aplicación que use otros puertos.
 - Persistencia comprobada después de reiniciar la API y PostgreSQL.
 
-Archivos de vídeo, etiquetas/categorías, búsqueda/filtros y cola son los siguientes bloques de Fase 1. La IA y Supabase esperan sus fases.
+- **Importar vídeo:** selecciona un archivo MP4, MOV, M4V, WebM, MKV o AVI y pulsa Importar vídeo. Se guarda una copia local; tu original permanece intacto. Hasta 2 GiB por defecto. El mismo contenido no crea otra fuente local.
+- **Archivos:** adjunta un vídeo a un enlace existente o abre sus copias guardadas. Varias fuentes pueden compartir una copia sin perder su procedencia. La reproducción depende del navegador; no hay conversión de formatos.
+- **Organizar:** escribe categorías y etiquetas separadas por comas. Puedes reutilizar nombres o vaciar un campo para retirar asociaciones. Hasta 10 categorías y 20 etiquetas de 60 caracteres por fuente.
+- **Buscar y filtrar:** busca por título, enlace, nombre de archivo, categoría o etiqueta; combina plataforma, tipo, categoría y etiqueta. Limpiar filtros vuelve a mostrar toda la vista.
+- **Pendientes:** consulta el orden de análisis futuro. Quitar de cola conserva la fuente; Encolar la añade al final. Enviar a papelera oculta su pendiente y restaurar recupera su estado anterior.
+
+La papelera conserva los archivos y no tiene purga. Si falta una copia local, vuelve a importar el mismo archivo para recuperarla. Las etiquetas/categorías son planas y sus nombres sin uso se conservan para reutilizarlos.
+
+**La Fase 1 no analiza ni descarga vídeos de enlaces.** La siguiente fase es audio y motor manual (Fase 2); IA y Supabase esperan sus fases. [Pruebas y límites de esta entrega](docs/verification/phase1.md).
 
 ## Arquitectura conservada
 
@@ -47,7 +55,7 @@ powershell -NoProfile -File .\scripts\backend.ps1 -Action Migrate
 powershell -NoProfile -File .\scripts\start.ps1 -OpenBrowser
 ```
 
-`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. `start.ps1` sirve la compilación local en 5180 y la API en 8000. No inicia un trabajador de IA.
+`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. La revisión actual es `0002_library`; `0001_sources` permanece intacta. `start.ps1` sirve la compilación local en 5180 y la API en 8000. No inicia un trabajador de IA.
 
 ```powershell
 # Pruebas aisladas en PostgreSQL y consistencia del esquema
@@ -63,7 +71,7 @@ La documentación de la API está en [localhost:8000/docs](http://127.0.0.1:8000
 
 ## Configuración y registros
 
-Los scripts inyectan la credencial PostgreSQL cifrada del usuario al proceso Python; no al navegador. `.env.example` documenta variables, pero no se carga automáticamente. `.local/runtime.json` contiene solo rutas locales para resolver instalaciones redirigidas por Windows; no contraseñas. `.local/api-error.log` y `.local/frontend-error.log` permiten revisar fallos de inicio. Todos estos archivos locales están excluidos de Git.
+Los scripts inyectan la credencial PostgreSQL cifrada del usuario al proceso Python; no al navegador. `.env.example` documenta variables, pero no se carga automáticamente. `.local/runtime.json` contiene solo rutas locales para resolver instalaciones redirigidas por Windows; no contraseñas. `.local/api-error.log` y `.local/frontend-error.log` permiten revisar fallos de inicio. Todos estos archivos locales están excluidos de Git. Los scripts resuelven la raíz de medios con `REELMIND_DATA_ROOT`, el campo opcional `DataRoot` del manifiesto o el directorio `data` del runtime. Se guarda fuera de OneDrive; [configuración y recuperación](docs/operations.md).
 
 Los servicios escuchan solo en `127.0.0.1`; PostgreSQL en loopback. Los datos vivos y secretos están fuera de OneDrive. No hay repositorio remoto ni publicación.
 
@@ -89,6 +97,8 @@ Consultar el **[plan de fases vigente](docs/roadmap.md)** para seguir el proyect
 | [Verificación Fase 0](docs/verification/phase0.md) | Evidencia y limitaciones de las pruebas |
 | [Gestión de enlaces, decisión](docs/decisions/0004-gestion-de-enlaces.md) | Papelera, paginación y concurrencia |
 | [Verificación Fase 1.1](docs/verification/phase1-1.md) | 34 pruebas, recorrido de interfaz y persistencia |
+| [Biblioteca completa, decisión](docs/decisions/0005-cierre-biblioteca.md) | Copias, clasificación, cola y límites de Fase 1 |
+| [Verificación de Fase 1](docs/verification/phase1.md) | 57 pruebas, interfaz, fallos parciales y reinicio |
 | [Estado](docs/status.md) | Resultado actual y siguiente paso |
 
 Antes de retomar otra sesión, leer AGENTS, README, plan de fases y estado. Al cerrar cada trabajo, actualizar el seguimiento según AGENTS. No confundir los módulos previstos en el plan con funciones ya implementadas.

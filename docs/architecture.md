@@ -1,6 +1,6 @@
 # Arquitectura aprobada
 
-Referencia: plan v1.3, páginas 3-7. El diagrama describe el sistema completo previsto. Implementado hasta Fase 1.1: entrada por URL, edición de título, papelera/restauración, paginación, interfaz React/Vite/Tailwind, API FastAPI y PostgreSQL con `sources`. Archivos, clasificación, cola, trabajador, modelos y Supabase siguen pendientes.
+Referencia: plan v1.3, páginas 3-7. El diagrama describe el sistema completo previsto. Implementado hasta Fase 1: enlaces y archivos locales, edición de título, papelera/restauración, clasificación, búsqueda/filtros, paginación y cola persistente detenida. Interfaz React/Vite/Tailwind, API FastAPI y PostgreSQL local. Trabajador, modelos y Supabase siguen pendientes.
 
 ## Contratos actuales
 
@@ -24,6 +24,16 @@ flowchart TD
   Vision --> Sintesis[Síntesis e indexación]
   Sintesis --> DB
 ```
+
+## Contratos añadidos en Fase 1
+
+- `POST /api/imports?filename=...`: cuerpo binario, 201 al importar; admite `source_id` y `expected_updated_at` para adjuntar a una fuente. 409 por duplicado/conflicto, 413 por tamaño, 415 por contenedor, 422 por entrada y 507 por escritura fallida. Duplicado de archivo incluye `existing_source`; solo se ofrece restaurar si está en papelera.
+- `GET /api/assets/{id}/content`: entrega la copia administrada, con soporte Range; 404 si la fuente está en papelera y 409 si falta la copia o la ruta es inválida.
+- `GET /api/organization`: catálogo de nombres e IDs. `PUT /api/sources/{id}/organization`: `tags`, `categories` y `expected_updated_at`, sustituyendo las asociaciones de esa fuente.
+- `PUT /api/sources/{id}/queue`: `queued` y `expected_updated_at`; añade/retira de pendientes sin ejecutar procesos.
+- El listado de fuentes añade `view=queue`, `q`, `platform`, `source_type`, `tag` y `category`; filtros combinables. Devuelve `queue_total` global y `total` filtrado. Cada fuente incluye `source_type`, URL nullable, activos, etiquetas, categorías y trabajo pendiente/cancelado.
+
+Los archivos pasan por `staging` y se publican por hash antes del commit; bloqueo PostgreSQL por hash y bloqueo/versionado de la fuente. La raíz se configura en el runtime; solo rutas relativas en la base. Detalles y recuperación en [ADR 0005](decisions/0005-cierre-biblioteca.md).
 
 ## Responsabilidades
 

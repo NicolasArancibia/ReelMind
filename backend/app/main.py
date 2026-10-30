@@ -5,17 +5,19 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, or_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import get_settings
 from app.db import get_engine, get_session
-from app.models import Source
+from app.models import Source, Tag, Category, ProcessingJob, MediaAsset
 from app.schemas import SourceCreate, SourceMutation, SourcePage, SourceRead, SourceUpdate, url_adapter
+from app.schemas import OrganizationUpdate, QueueUpdate
 
-REVISION = "0001_sources"
+REVISION = "0002_library"
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:5180", "http://localhost:5180",
     "http://127.0.0.1:8000", "http://localhost:8000",
@@ -29,7 +31,7 @@ async def lifespan(app: FastAPI):
     get_engine().dispose()
 
 
-app = FastAPI(title="ReelMind", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="ReelMind", version="0.3.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -49,7 +51,7 @@ async def database_unavailable(request: Request, exc: SQLAlchemyError):
 
 @app.exception_handler(RequestValidationError)
 async def invalid_input(request: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={"detail": "Revisa los datos enviados. El enlace debe ser http o https, sin contraseñas; el título admite hasta 240 caracteres. Si estabas editando, actualiza la biblioteca."})
+    return JSONResponse(status_code=422, content={"detail": "Revisa los datos: enlaces http/https sin contraseñas; título hasta 240 caracteres; hasta 20 etiquetas y 10 categorías de 1–60 caracteres. Si estabas editando, actualiza la biblioteca."})
 
 
 def platform_for(host: str) -> str:
@@ -78,7 +80,12 @@ def health(session: Session = Depends(get_session)):
 def list_sources(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0, le=2_147_483_647),
-    view: Literal["library", "trash"] = "library",
+    view: Literal["library", "trash", "queue"] = "library",
+    q: str = Query(default="", max_length=240),
+    platform: Literal["instagram", "youtube", "tiktok", "local", "other"] | None = None,
+    source_type: Literal["url", "file"] | None = None,
+    tag: UUID | None = None,
+    category: UUID | None = None,
     session: Session = Depends(get_session),
 ):
     # Counts and page share one snapshot, even when another tab changes the library.
@@ -87,13 +94,36 @@ def list_sources(
         func.count().filter(Source.deleted_at.is_(None)),
         func.count().filter(Source.deleted_at.is_not(None)),
     )).one()
-    total = trash_total if view == "trash" else active_total
-    offset = min(offset, ((max(total, 1) - 1) // limit) * limit)
     visible = Source.deleted_at.is_not(None) if view == "trash" else Source.deleted_at.is_(None)
+    queued = Source.job.has(ProcessingJob.status == "pending")
+    queue_total = session.scalar(select(func.count()).select_from(Source).where(Source.deleted_at.is_(None), queued))
+    conditions = [visible]
+    if view == "queue":
+        conditions.append(queued)
+    if platform:
+        conditions.append(Source.platform == platform)
+    if source_type:
+        conditions.append(Source.source_type == source_type)
+    if tag:
+        conditions.append(Source.tags.any(Tag.id == tag))
+    if category:
+        conditions.append(Source.categories.any(Category.id == category))
+    if q.strip():
+        pattern = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        conditions.append(or_(Source.title.ilike(pattern), Source.original_url.ilike(pattern),
+            Source.tags.any(Tag.name.ilike(pattern)), Source.categories.any(Category.name.ilike(pattern)),
+            Source.assets.any(MediaAsset.original_name.ilike(pattern))))
+    total = session.scalar(select(func.count()).select_from(Source).where(*conditions))
+    offset = min(offset, ((max(total, 1) - 1) // limit) * limit)
     sort_date = Source.deleted_at if view == "trash" else Source.created_at
-    items = session.scalars(select(Source).where(visible).order_by(sort_date.desc(), Source.id.desc()).offset(offset).limit(limit)).all()
+    query = select(Source).where(*conditions)
+    if view == "queue":
+        query = query.join(ProcessingJob).order_by(ProcessingJob.created_at, ProcessingJob.id)
+    else:
+        query = query.order_by(sort_date.desc(), Source.id.desc())
+    items = session.scalars(query.offset(offset).limit(limit)).all()
     return {"items": items, "total": total, "active_total": active_total,
-            "trash_total": trash_total, "offset": offset, "limit": limit}
+            "trash_total": trash_total, "queue_total": queue_total, "offset": offset, "limit": limit}
 
 
 @app.get("/api/sources/{source_id}", response_model=SourceRead)
@@ -112,6 +142,7 @@ def create_source(payload: SourceCreate, session: Session = Depends(get_session)
         source_type="url", platform=platform_for(parsed.host or ""), title=payload.title,
     )
     session.add(source)
+    source.job = ProcessingJob()
     try:
         session.commit()
     except IntegrityError as exc:
@@ -178,3 +209,44 @@ def restore_source(source_id: UUID, payload: SourceMutation, session: Session = 
     check_version(source, payload)
     source.deleted_at = None
     return commit_source(session, source)
+
+
+@app.get("/api/organization")
+def organization(session: Session = Depends(get_session)):
+    return {key: [{"id": row.id, "name": row.name} for row in session.scalars(select(model).order_by(model.name))]
+            for key, model in (("tags", Tag), ("categories", Category))}
+
+
+@app.put("/api/sources/{source_id}/organization", response_model=SourceRead)
+def organize(source_id: UUID, payload: OrganizationUpdate, session: Session = Depends(get_session)):
+    source = locked_source(session, source_id)
+    check_version(source, payload)
+    if source.deleted_at is not None:
+        raise HTTPException(409, "Restaura la fuente antes de organizarla.")
+    for key, model in (("tags", Tag), ("categories", Category)):
+        values = []
+        # Stable order prevents deadlocks when different sources create the same names.
+        for name in sorted(getattr(payload, key), key=str.casefold):
+            normalized = name.casefold()
+            session.execute(insert(model).values(name=name, normalized_name=normalized).on_conflict_do_nothing(index_elements=["normalized_name"]))
+            values.append(session.scalar(select(model).where(model.normalized_name == normalized)))
+        setattr(source, key, values)
+    return commit_source(session, source)
+
+
+@app.put("/api/sources/{source_id}/queue", response_model=SourceRead)
+def queue_source(source_id: UUID, payload: QueueUpdate, session: Session = Depends(get_session)):
+    source = locked_source(session, source_id)
+    check_version(source, payload)
+    if source.deleted_at is not None:
+        raise HTTPException(409, "Restaura la fuente antes de cambiar la cola.")
+    if source.job is None:
+        source.job = ProcessingJob()
+    if payload.queued and source.job.status == "cancelled":
+        source.job.created_at = func.clock_timestamp()
+    source.job.status = "pending" if payload.queued else "cancelled"
+    return commit_source(session, source)
+
+
+from app.media import router as media_router
+app.include_router(media_router)

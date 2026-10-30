@@ -1,8 +1,8 @@
 # Diseño de datos y migraciones
 
-**Estado: `sources` implementada mediante `0001_sources`; Fase 1.1 usa su edición, papelera y restauración sin cambio de esquema. El resto es diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
+**Estado: `0001_sources` y `0002_library` aplicadas. Fase 1 implementada; las secciones de audio, análisis, sincronización, búsqueda semántica y proyectos siguen siendo diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
 
-La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/estado/URL obligatoria, índice único parcial de canonical_url e índices de plataforma y estado/fecha. El título admite 240 caracteres. La API guarda enlaces HTTP/HTTPS sin credenciales, conserva la URL original y usa una normalización conservadora para duplicados. No descarga medios ni crea trabajos.
+La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/estado/URL obligatoria, índice único parcial de canonical_url e índices de plataforma y estado/fecha. El título admite 240 caracteres. La API guarda enlaces HTTP/HTTPS sin credenciales, conserva la URL original y usa una normalización conservadora para duplicados. No descarga medios de enlaces. Desde `0002_library`, el alta crea un pendiente en la misma transacción.
 
 ## Convenciones SQL
 
@@ -13,7 +13,23 @@ La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/
 - Borrado lógico con `deleted_at timestamptz NULL` en fuentes. La purga de archivos será una operación separada; no aplicar cascadas globales a información citada.
 - Los estados siguientes son un diseño propuesto a fijar en migraciones con `CHECK`; calidad y estado operativo no se confunden.
 
-## Núcleo, fases 0B y 1
+## Esquema aplicado en Fase 1
+
+La [decisión 0005](decisions/0005-cierre-biblioteca.md) concreta el diseño del núcleo:
+
+| Tabla | Columnas y restricciones aplicadas |
+| --- | --- |
+| `media_files` | UUID PK, checksum SHA-256 único, local_path relativo único, mime_type, size_bytes > 0 |
+| `media_assets` | UUID PK, source_id y file_id FK RESTRICT indexadas, original_name hasta 240 caracteres, created_at; UNIQUE(source_id, file_id) |
+| `tags`, `categories` | UUID PK, name hasta 60 caracteres no vacío, normalized_name único; categorías planas |
+| `source_tags`, `source_categories` | PK compuesta, FK RESTRICT e índice inverso por etiqueta/categoría |
+| `processing_jobs` | UUID PK, source_id FK RESTRICT único, status `pending` o `cancelled`, created_at; índice (status, created_at) |
+
+Una copia física puede pertenecer a varias fuentes. La API impide duplicar una fuente local por contenido mediante bloqueo transaccional por hash; las asociaciones preservan procedencias. El backfill crea pendientes para fuentes anteriores, incluidas las de papelera, que se ocultan de la cola visible.
+
+La cola de Fase 1 no tiene estados de ejecución. La jerarquía, duración/fotogramas, tipos de derivados y campos de trabajador descritos a continuación son **ampliaciones futuras**, no columnas ya aplicadas. Necesitarán nuevas revisiones; no modificar migraciones publicadas. Los nombres `0002`–`0006` del cuadro histórico al final son hitos del plan, no revisiones ejecutables actuales.
+
+## Núcleo: base aplicada y ampliaciones previstas
 
 ### sources
 
@@ -31,13 +47,13 @@ La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/
 
 Índice único parcial `uq_sources_canonical_url ON sources(canonical_url) WHERE canonical_url IS NOT NULL`. La normalización conserva identidad del vídeo, no elimina arbitrariamente parámetros. Conservar original_url. La unicidad también alcanza fuentes borradas lógicamente: una nueva importación ofrece restaurarlas en vez de duplicarlas. Indexar `(status, created_at)` y `platform` según consultas.
 
-### media_assets
+### media_assets — diseño ampliado futuro
 
 `id uuid PK`, `source_id uuid NOT NULL REFERENCES sources(id) ON DELETE RESTRICT`, `asset_type text NOT NULL` (`original`, `audio`, `frame`, `other`), `local_path text NOT NULL`, `mime_type text NOT NULL`, `size_bytes bigint NOT NULL CHECK (size_bytes >= 0)`, `checksum text NULL`, `duration_ms bigint NULL CHECK (duration_ms >= 0)`, `frame_ms bigint NULL CHECK (frame_ms >= 0)`, `created_at timestamptz NOT NULL DEFAULT now()`.
 
 Ruta relativa a la raíz de almacenamiento, validada en backend; `UNIQUE(local_path)` para un activo físico registrado una sola vez. Índices en `source_id` y `checksum`. Hash SHA-256 en contenido disponible: no imponer unicidad global al hash sin diseñar antes cómo conservar múltiples procedencias. La base no puede demostrar por sí sola que el archivo existe ni que una ruta resuelta permanezca dentro de la raíz.
 
-### tags y categories
+### tags y categories — diseño ampliado futuro
 
 - `tags`: `id uuid PK`, `name text NOT NULL`, `normalized_name text NOT NULL UNIQUE`, `CHECK (btrim(name) <> '')`.
 - `categories`: mismos campos, `description text NULL`, `parent_id uuid NULL REFERENCES categories(id) ON DELETE RESTRICT`, `CHECK (parent_id IS NULL OR parent_id <> id)`.
@@ -45,13 +61,13 @@ Ruta relativa a la raíz de almacenamiento, validada en backend; `UNIQUE(local_p
 - Impedir ciclos largos de categorías mediante una comprobación recursiva dentro de una transacción que serialice cambios de jerarquía; el `CHECK` anterior solo impide autorreferencia directa. Cubrir cambios concurrentes antes de aceptar la migración.
 - `source_tags(source_id uuid FK RESTRICT, tag_id uuid FK RESTRICT, PRIMARY KEY(source_id, tag_id))` y `source_categories(source_id uuid FK RESTRICT, category_id uuid FK RESTRICT, PRIMARY KEY(source_id, category_id))`. Añadir índice por la segunda FK para búsqueda inversa. Eliminar la asociación no elimina la fuente.
 
-### processing_jobs
+### processing_jobs — diseño ampliado para el motor futuro
 
 `id uuid PK`, `source_id uuid NOT NULL REFERENCES sources(id) ON DELETE RESTRICT`, `job_type text NOT NULL` (`full_analysis`, `transcription`, `vision`, `indexing`), `status text NOT NULL DEFAULT 'pending'`, `attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0)`, `checkpoint jsonb NOT NULL DEFAULT '{}'::jsonb`, `error_message text NULL`, `created_at timestamptz NOT NULL DEFAULT now()`, `started_at`, `finished_at`, `heartbeat_at` (`timestamptz NULL`), `worker_id text NULL`.
 
 Estados permitidos: `pending`, `running`, `pause_requested`, `paused`, `stop_requested`, `stopped`, `completed`, `failed`. `checkpoint` debe ser un objeto JSON mediante `CHECK (jsonb_typeof(checkpoint) = 'object')`. Un `finished_at` definido requiere `started_at` y no puede ser anterior. Índices `(status, created_at)` y `source_id`.
 
-Propuesta: índice único parcial por `(source_id, job_type)` para estados activos/pendientes que impida encolar duplicados involuntarios. Reprocesar un trabajo finalizado crea uno nuevo, preservando historial. La prioridad de la cola se incorporará al concretar su interfaz en Fase 1.
+Propuesta: índice único parcial por `(source_id, job_type)` para estados activos/pendientes que impida encolar duplicados involuntarios. Reprocesar un trabajo finalizado crea uno nuevo, preservando historial. Fase 1 adopta FIFO; prioridades y estados adicionales se evaluarán con el motor en Fase 2.
 
 Concurrencia global: una reserva de recursos compartida con chat más reclamación transaccional de trabajos. `FOR UPDATE SKIP LOCKED` evita reclamar la misma fila, pero por sí solo no limita a un único vídeo global. Definir bloqueo del trabajador, latidos y recuperación explícita en Fase 2. No adoptar un segundo servicio de colas por defecto.
 
@@ -105,7 +121,7 @@ Comenzar con búsqueda vectorial exacta. Separar dimensiones/perfiles en espacio
 | Orden | Alcance |
 | --- | --- |
 | 0001_sources (aplicada) | Fuentes, restricciones e índices; Fase 0 |
-| Siguientes revisiones del núcleo | Activos, categorías/etiquetas, asociaciones y cola; Fase 1 |
+| 0002_library (aplicada) | Copias físicas, activos, categorías/etiquetas, asociaciones y cola detenida; Fase 1 |
 | 0002 | Perfiles, transcripciones y segmentos; fase 2 |
 | 0003 | Análisis, recursos y evidencias; fase 3 |
 | 0004 local + migración Supabase independiente | Recibos y bandeja remota; fase 4 |

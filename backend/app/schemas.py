@@ -44,12 +44,17 @@ class SourceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     platform: str
-    original_url: str
+    original_url: str | None
+    source_type: str
     title: str | None
     status: str
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    tags: list["LabelRead"] = []
+    categories: list["LabelRead"] = []
+    assets: list["AssetRead"] = []
+    job: "JobRead | None" = None
 
 
 class SourcePage(BaseModel):
@@ -59,3 +64,55 @@ class SourcePage(BaseModel):
     trash_total: int
     offset: int
     limit: int
+    queue_total: int = 0
+
+
+class LabelRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+
+
+class FileRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    checksum: str
+    mime_type: str
+    size_bytes: int
+
+
+class AssetRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    original_name: str
+    file: FileRead
+
+
+class JobRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    status: str
+    created_at: datetime
+
+
+class OrganizationUpdate(SourceMutation):
+    tags: list[str] = Field(max_length=20)
+    categories: list[str] = Field(max_length=10)
+
+    @field_validator("tags", "categories")
+    @classmethod
+    def clean_names(cls, names):
+        import unicodedata
+        result = {}
+        for value in names:
+            name = " ".join(unicodedata.normalize("NFC", value).split())
+            if not name or len(name) > 60 or any(ord(c) < 32 for c in name):
+                raise ValueError("Cada nombre debe tener entre 1 y 60 caracteres.")
+            result.setdefault(name.casefold(), name)
+        return list(result.values())
+
+
+class QueueUpdate(SourceMutation):
+    queued: bool
+
+
+SourceRead.model_rebuild()

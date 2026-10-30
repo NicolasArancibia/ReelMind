@@ -4,6 +4,17 @@ Registro cronológico, con las entradas más recientes primero. Fechas en Americ
 
 Consultar el [plan vigente](roadmap.md) y el [estado actual](status.md).
 
+## 2026-10-29 — Cierre completo de Fase 1
+
+- **Solicitud:** «termina la fase 1» y «termina lo que estabas haciendo y deja todo bien documentado y listo».
+- **Realizado:** importación por copia y SHA-256, archivos asociados a fuentes, categorías/etiquetas, búsqueda y filtros combinados, cola persistente FIFO sin ejecución; migración `0002_library` aplicada con respaldo previo. Raíz de medios estable y configurable fuera de OneDrive.
+- **Decisión:** [0005: cierre de biblioteca](decisions/0005-cierre-biblioteca.md). Categorías planas, papelera sin purga, múltiples procedencias para una copia, estados de trabajador reservados para Fase 2.
+- **Verificación:** 57 pruebas aprobadas en PostgreSQL aislado, compilación TypeScript/Vite y `alembic check`; flujo real de importación, clasificación, búsqueda, filtros, cola y papelera en navegador. Reinicio de frontend/API con mismos datos, asociaciones y hash del vídeo. Revisión móvil de 390 px y puertos solo locales. [Evidencias y límites](verification/phase1.md).
+- **Incidencias resueltas:** conexión de pruebas bloqueada por el entorno restringido, repetida con acceso autorizado a loopback; selección de archivo lenta en la herramienta de navegador, completada sin importaciones parciales.
+- **Limpieza:** retirados exclusivamente los dos registros temporales identificados y sus asociaciones, cola y copia sintética verificada por hash. Documentación, plan, README, arquitectura, datos, operación y AGENTS sincronizados; PDF original intacto.
+- **Resultado:** Fase 1 completada y verificada. Aplicación preparada e iniciada con motor detenido; sin nuevas dependencias, modelos, servicios ni publicaciones.
+- **Pendientes/siguiente paso:** Fase 2, audio y motor manual. No iniciada. Restauración integral base/medios en Fase 7; no se sustituye con la prueba de reinicio.
+
 ## 2026-10-29 — Fase 1.1: gestión de enlaces
 
 - **Solicitud:** «Empieza la Fase 1». Se comienza por el primer bloque del plan.
