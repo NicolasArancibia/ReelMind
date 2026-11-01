@@ -3,7 +3,7 @@ import hashlib
 from uuid import UUID
 from sqlalchemy import select,func,or_,Float,bindparam
 from sqlalchemy.orm import aliased
-from app.models import Source,Transcript,AudiovisualAnalysis,ContentChunk,ChunkEmbedding
+from app.models import Source,Transcript,AudiovisualAnalysis,ContentChunk,ChunkEmbedding,NoteRevision
 from app.embeddings import CHUNK_CHARS
 from app.vector_type import Vector
 
@@ -15,8 +15,11 @@ def current_rows(model):
 def live_chunks():
     audio=current_rows(Transcript).with_only_columns(Transcript.id)
     visual=current_rows(AudiovisualAnalysis).with_only_columns(AudiovisualAnalysis.id)
+    from app.notebook import latest_notes
+    notes=latest_notes().where(NoteRevision.archived.is_(False)).with_only_columns(NoteRevision.id,NoteRevision.version).subquery()
+    from sqlalchemy import tuple_
     return select(ContentChunk).join(Source,Source.id==ContentChunk.source_id).where(Source.deleted_at.is_(None),
-        or_(ContentChunk.transcript_id.in_(audio),ContentChunk.analysis_id.in_(visual)))
+        or_(ContentChunk.transcript_id.in_(audio),ContentChunk.analysis_id.in_(visual),tuple_(ContentChunk.note_id,ContentChunk.note_version).in_(select(notes))))
 
 def split_text(content):
     # Exact substrings; offsets are recorded, no generated summaries in the index.
@@ -42,12 +45,24 @@ def snapshots(session):
             description=item.get('description','').strip(); visible=item.get('visible_text','').strip()
             content=description + ('\nTexto visible: '+visible if visible and visible not in description else '')
             append(row.source_id,row.id,'visual',ordinal,content,{'version':row.version,'evidence_id':item['id']},time_ms=item['time_ms'])
-    if len(result)>2000: raise ValueError('Más de 2000 fragmentos; se requiere indexación por lotes antes de continuar.')
+    from app.notebook import latest_notes
+    for row in session.scalars(latest_notes().where(NoteRevision.archived.is_(False))).all():
+        content=row.content+('\nCita guardada: '+row.quote_text if row.quote_text else '')
+        for offset,part in split_text(content):
+            result.append({'source_id':str(row.source_id),'analysis_id':None,'transcript_id':None,'note_id':str(row.id),'note_version':row.version,
+                'origin_key':f'note:{row.id}:{row.version}:{offset}','ordinal':offset//CHUNK_CHARS,'content':part,
+                'content_sha256':hashlib.sha256(part.encode()).hexdigest(),'origin':{'kind':'note','version':row.version,'offset':offset,'author':'user'},
+                'start_ms':row.start_ms,'end_ms':row.end_ms,'time_ms':None})
     return result
 
-def ranked(session,profile,query_vector,limit=8,min_score=.5):
+def ranked(session,profile,query_vector,limit=8,min_score=.5,project_id=None,source_ids=None):
     distance=ChunkEmbedding.embedding.op('OPERATOR(public.<=>)',return_type=Float)(bindparam('query_vector',query_vector,type_=Vector(1024)))
-    rows=session.execute(live_chunks().add_columns(distance.label('distance')).join(ChunkEmbedding,ChunkEmbedding.chunk_id==ContentChunk.id)
+    query=live_chunks()
+    if project_id:
+        from app.models import ProjectSource,Project
+        query=query.where(ContentChunk.source_id.in_(select(ProjectSource.source_id).join(Project).where(ProjectSource.project_id==UUID(str(project_id)),Project.archived_at.is_(None))))
+    if source_ids:query=query.where(ContentChunk.source_id.in_([UUID(str(i)) for i in source_ids]))
+    rows=session.execute(query.add_columns(distance.label('distance')).join(ChunkEmbedding,ChunkEmbedding.chunk_id==ContentChunk.id)
         .where(ChunkEmbedding.profile_id==profile).order_by(distance,ContentChunk.id).limit(limit)).all()
     return [{'chunk_id':str(row.id),'score':round(1-float(d),6)} for row,d in rows if 1-float(d)>=min_score]
 

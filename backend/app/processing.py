@@ -73,7 +73,7 @@ def run_audio(asset, attempt_id, cancelled, mode='audio'):
             process.kill()
         process.wait()
         # Only our known files, no recursive cleanup or originals.
-        for name in ("audio.wav", "result.json", "evidence.json"):
+        for name in ("audio.wav", "result.json", "evidence.json", "progress.json"):
             try:
                 (work / name).unlink(missing_ok=True)
             except OSError:

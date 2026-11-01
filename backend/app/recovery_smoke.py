@@ -14,6 +14,8 @@ def main():
         sources=client.get('/api/sources?limit=100').json()['items']
         assets=0
         for source in sources:
+            assert client.get(f"/api/notes?source_id={source['id']}").status_code==200
+            assert client.get(f"/api/sources/{source['id']}/export?format=json").status_code==200
             for kind in ('transcripts','analyses'):
                 assert client.get(f"/api/sources/{source['id']}/{kind}").status_code==200
             for asset in source['assets']:
@@ -27,6 +29,7 @@ def main():
             graph=client.get('/api/projects/'+project['id']+'/graph')
             assert graph.status_code==200
         assert client.get('/api/retrieval/status').json()['current'] is None
+        assert client.get('/api/system/status').status_code==200
         assert client.post('/api/projects',json={'name':'blocked'},headers={'Origin':'https://example.org'}).status_code==403
         assert client.get('/api/health',headers={'Host':'untrusted.example'}).status_code==400
     report={'api_verified':True,'sources':len(sources),'media_ranges':assets,'sessions':len(sessions),'projects':len(projects),

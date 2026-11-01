@@ -112,7 +112,7 @@ function Analyses({ sourceId }: { sourceId: string }) {
       {row.provenance.synthesis_mode !== 'extractive' && <p className="dialog-error">Versión experimental anterior. Sus referencias requieren revisión.</p>}
       <p className="dialog-help">Esta ficha describe el vídeo; no verifica sus afirmaciones.</p>
       {row.synthesis.claims.length === 0 && <p>No hay evidencia suficiente para sintetizar.</p>}
-      {row.synthesis.claims.map((claim, i) => <p key={i}>{claim.text} <small>{claim.evidence_ids.map(id => <a key={id} href={`#evidence-${row.id}-${id}`}> [{id}] </a>)}</small></p>)}
+      {row.synthesis.claims.map((claim, i) => <p key={i}>{claim.text} <small>{claim.evidence_ids.map(id => <a key={id} href={`#evidence-${row.id}-${id}`} onClick={event => { event.preventDefault(); document.getElementById(`evidence-${row.id}-${id}`)?.scrollIntoView({ block: 'center' }) }}> [{id}] </a>)}</small></p>)}
       <h3>Evidencias</h3>
       {row.evidence.map(item => <p className="transcript-segment" id={`evidence-${row.id}-${item.id}`} key={item.id}><span>{item.id} · {timestamp(item.time_ms ?? item.start_ms ?? 0)} · {item.kind === 'visual' ? 'Visual' : 'Audio'}</span>{item.description || item.text}{item.visible_text && <> Texto visible: {item.visible_text}</>}{item.ocr_unusable && <> · Texto visual no recuperado de forma fiable</>}{item.uncertain && <> · Observación incierta</>}</p>)}
       <h3>Límites</h3>

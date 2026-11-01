@@ -163,3 +163,12 @@ Copiar al inicio del registro y completar; esta plantilla no representa trabajo 
 - Pendientes o bloqueos:
 - Siguiente paso:
 ```
+
+## 2026-11-01 — Implementación del cierre funcional de escritorio
+
+- Autorización del usuario: implementar todo el plan pendiente 8–14. Guardado punto local de código previo; sin publicación ni delegación. Se conserva la arquitectura y móvil/Supabase aplazados.
+- Añadidos captura/acciones por lotes, favoritos/resumen revisado, apuntes/destacados inmutables con reproductor/exportación, Mis ideas, filtros y gestión de chat/proyectos/taxonomía. Grafo con extremos de apuntes versionados. Migraciones 0009/0010 con respaldo.
+- Chat explicativo en español con citas exactas/verificación y fallback extractivo; alcance por proyecto/fuente, tres preguntas previas, archivo/renombrado/exportación e índice manual por lotes confirmados. Sin modelos nuevos ni análisis al abrir.
+- Diagnóstico y ventana Tkinter de mantenimiento: copia, restauración aislada, migración/activación reversible de configuración y limpieza revisada de temporales; entrega CMD mejorada. 27 pruebas dirigidas distintas aprobadas, build y Check sin diferencias; límites en [verificación](verification/product1.md).
+- Recorrido real con destacado de Figma/Notion, comentario versionado, vídeo a 37,167 s, regreso al mismo Chat e índice 9/9. Respuesta real en español y cita correcta. Copia guiada de 23 tablas/dos medios, restauración exacta en destino nuevo, activación temporal y regreso al original comprobados. Se conservan las dos fuentes, el apunte de ensayo y los respaldos.
+- Siguiente paso: aceptación personal del bloque 14 con colección representativa y revisión de resumen/comparación/utilidad. No se declara versión 1.0 aceptada ni rendimiento general; copia fuera del disco/retención por elegir. [ADR 0016](decisions/0016-conocimiento-personal-y-operacion.md).

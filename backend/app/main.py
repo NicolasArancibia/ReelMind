@@ -17,7 +17,7 @@ from app.models import Source, Tag, Category, ProcessingJob, MediaAsset
 from app.schemas import SourceCreate, SourceMutation, SourcePage, SourceRead, SourceUpdate, url_adapter
 from app.schemas import OrganizationUpdate, QueueUpdate
 
-REVISION = "0008_graph"
+REVISION = "0010_idea_connections"
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:5180", "http://localhost:5180",
     "http://127.0.0.1:8000", "http://localhost:8000",
@@ -65,6 +65,10 @@ async def database_unavailable(request: Request, exc: SQLAlchemyError):
 
 @app.exception_handler(RequestValidationError)
 async def invalid_input(request: Request, exc: RequestValidationError):
+    if '/notes' in request.url.path:
+        return JSONResponse(status_code=422,content={'detail':'Revisa el apunte (1–8000 caracteres), los tiempos en milisegundos y la versión que estás editando.'})
+    if '/retrieval' in request.url.path or '/projects' in request.url.path or '/system' in request.url.path:
+        return JSONResponse(status_code=422,content={'detail':'Revisa los campos y su longitud. Actualiza la vista si estás editando una versión anterior.'})
     return JSONResponse(status_code=422, content={"detail": "Revisa los datos: enlaces http/https sin contraseñas; título hasta 240 caracteres; hasta 20 etiquetas y 10 categorías de 1–60 caracteres. Si estabas editando, actualiza la biblioteca."})
 
 
@@ -97,6 +101,8 @@ def list_sources(
     offset: int = Query(default=0, ge=0, le=2_147_483_647),
     view: Literal["library", "trash", "queue"] = "library",
     q: str = Query(default="", max_length=240),
+    favorite: bool = False,
+    project_id: UUID | None = None,
     platform: Literal["instagram", "youtube", "tiktok", "local", "other"] | None = None,
     source_type: Literal["url", "file"] | None = None,
     tag: UUID | None = None,
@@ -113,6 +119,10 @@ def list_sources(
     queued = Source.job.has(ProcessingJob.status == "pending")
     queue_total = session.scalar(select(func.count()).select_from(Source).where(Source.deleted_at.is_(None), queued))
     conditions = [visible]
+    if favorite: conditions.append(Source.favorite.is_(True))
+    if project_id:
+        from app.models import ProjectSource
+        conditions.append(Source.id.in_(select(ProjectSource.source_id).where(ProjectSource.project_id==project_id)))
     if view == "queue":
         conditions.append(queued)
     if platform:
@@ -125,7 +135,7 @@ def list_sources(
         conditions.append(Source.categories.any(Category.id == category))
     if q.strip():
         pattern = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-        conditions.append(or_(Source.title.ilike(pattern), Source.original_url.ilike(pattern),
+        conditions.append(or_(Source.title.ilike(pattern), Source.summary.ilike(pattern), Source.original_url.ilike(pattern),
             Source.tags.any(Tag.name.ilike(pattern)), Source.categories.any(Category.name.ilike(pattern)),
             Source.assets.any(MediaAsset.original_name.ilike(pattern))))
     total = session.scalar(select(func.count()).select_from(Source).where(*conditions))
@@ -238,10 +248,14 @@ def organization(session: Session = Depends(get_session)):
 
 @app.put("/api/sources/{source_id}/organization", response_model=SourceRead)
 def organize(source_id: UUID, payload: OrganizationUpdate, session: Session = Depends(get_session)):
+    from app.organization_lock import lock_organization
+    lock_organization(session)
     source = locked_source(session, source_id)
     check_version(source, payload)
     if source.deleted_at is not None:
         raise HTTPException(409, "Restaura la fuente antes de organizarla.")
+    if 'favorite' in payload.model_fields_set: source.favorite=payload.favorite
+    if 'summary' in payload.model_fields_set: source.summary=payload.summary.strip() if payload.summary else None
     for key, model in (("tags", Tag), ("categories", Category)):
         values = []
         # Stable order prevents deadlocks when different sources create the same names.
@@ -279,3 +293,10 @@ from app.retrieval import router as retrieval_router
 app.include_router(retrieval_router)
 from app.projects import router as projects_router
 app.include_router(projects_router)
+
+from app.notebook import router as notebook_router
+app.include_router(notebook_router)
+from app.library_actions import router as library_actions_router
+app.include_router(library_actions_router)
+from app.system import router as system_router
+app.include_router(system_router)

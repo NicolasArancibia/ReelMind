@@ -11,6 +11,8 @@ class Base(DeclarativeBase):
 
 
 class Source(Base):
+    favorite: Mapped[bool] = mapped_column(sa.Boolean, server_default=sa.false())
+    summary: Mapped[str | None] = mapped_column(sa.Text)
     __tablename__ = "sources"
     __table_args__ = (
         sa.CheckConstraint(
@@ -206,6 +208,7 @@ class EmbeddingProfile(Base):
     configuration: Mapped[dict] = mapped_column(JSONB)
 
 class Project(Base):
+    archived_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     __tablename__='projects'
     __table_args__=(sa.CheckConstraint('length(btrim(name)) > 0',name='ck_project_name'),)
     id: Mapped[UUID] = mapped_column(sa.Uuid,primary_key=True,server_default=sa.text('gen_random_uuid()'))
@@ -219,8 +222,16 @@ class ProjectSource(Base):
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True),server_default=sa.func.now())
 
 class RelationRevision(Base):
+    from_note_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    from_note_version: Mapped[int | None] = mapped_column()
+    to_note_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    to_note_version: Mapped[int | None] = mapped_column()
     __tablename__='relation_revisions'
-    __table_args__=(sa.CheckConstraint('version > 0 AND from_source_id <> to_source_id',name='ck_relation_identity'),
+    __table_args__=(sa.CheckConstraint("version > 0 AND (from_source_id <> to_source_id OR coalesce(from_note_id::text, '') <> coalesce(to_note_id::text, ''))",name='ck_relation_identity'),
+        sa.CheckConstraint('(from_note_id IS NULL) = (from_note_version IS NULL)',name='ck_relation_from_note'),
+        sa.CheckConstraint('(to_note_id IS NULL) = (to_note_version IS NULL)',name='ck_relation_to_note'),
+        sa.ForeignKeyConstraint(['from_note_id','from_note_version','from_source_id'],['note_revisions.id','note_revisions.version','note_revisions.source_id'],name='fk_relation_from_note',ondelete='RESTRICT'),
+        sa.ForeignKeyConstraint(['to_note_id','to_note_version','to_source_id'],['note_revisions.id','note_revisions.version','note_revisions.source_id'],name='fk_relation_to_note',ondelete='RESTRICT'),
         sa.CheckConstraint('length(btrim(label)) > 0 AND length(btrim(evidence)) > 0',name='ck_relation_evidence'),
         sa.CheckConstraint("review_status IN ('proposed','accepted','rejected')",name='ck_relation_review'))
     id: Mapped[UUID] = mapped_column(sa.Uuid,primary_key=True)
@@ -234,9 +245,13 @@ class RelationRevision(Base):
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True),server_default=sa.func.now())
 
 class ContentChunk(Base):
+    note_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    note_version: Mapped[int | None] = mapped_column()
     __tablename__='content_chunks'
     __table_args__=(
-        sa.CheckConstraint('(analysis_id IS NULL) <> (transcript_id IS NULL)',name='ck_chunk_origin'),
+        sa.UniqueConstraint('id','source_id',name='uq_chunk_id_source'),
+        sa.CheckConstraint('num_nonnulls(analysis_id,transcript_id,note_id) = 1 AND ((note_id IS NULL) = (note_version IS NULL))',name='ck_chunk_origin'),
+        sa.ForeignKeyConstraint(['note_id','note_version','source_id'],['note_revisions.id','note_revisions.version','note_revisions.source_id'],name='fk_chunk_note_source',ondelete='RESTRICT'),
         sa.CheckConstraint('ordinal >= 0 AND length(content) BETWEEN 1 AND 1200',name='ck_chunk_content'),
         sa.CheckConstraint('(start_ms IS NULL AND end_ms IS NULL) OR (start_ms IS NOT NULL AND end_ms IS NOT NULL AND start_ms >= 0 AND end_ms > start_ms)',name='ck_chunk_interval'),
         sa.CheckConstraint('time_ms IS NULL OR time_ms >= 0',name='ck_chunk_point'),
@@ -263,6 +278,8 @@ class ChunkEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(Vector(1024))
 
 class ChatSession(Base):
+    project_id: Mapped[UUID | None] = mapped_column(sa.ForeignKey('projects.id',ondelete='RESTRICT'))
+    archived_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     __tablename__='chat_sessions'
     id: Mapped[UUID] = mapped_column(sa.Uuid,primary_key=True,server_default=sa.text('gen_random_uuid()'))
     title: Mapped[str] = mapped_column(sa.String(120))
@@ -282,3 +299,21 @@ class RetrievalTask(Base):
     error_message: Mapped[str | None] = mapped_column(sa.Text)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True),server_default=sa.func.now())
     finished_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+class NoteRevision(Base):
+    __tablename__='note_revisions'
+    __table_args__=(sa.UniqueConstraint('id','version','source_id',name='uq_note_version_source'),
+        sa.ForeignKeyConstraint(['quote_chunk_id','source_id'],['content_chunks.id','content_chunks.source_id'],ondelete='RESTRICT',name='fk_note_quote_source',use_alter=True),
+        sa.CheckConstraint('version > 0 AND length(btrim(content)) > 0',name='ck_note_content'),
+        sa.CheckConstraint('(start_ms IS NULL AND end_ms IS NULL) OR (start_ms IS NOT NULL AND start_ms >= 0 AND end_ms IS NOT NULL AND end_ms > start_ms)',name='ck_note_interval'))
+    id: Mapped[UUID] = mapped_column(sa.Uuid,primary_key=True)
+    version: Mapped[int] = mapped_column(primary_key=True)
+    source_id: Mapped[UUID] = mapped_column(sa.ForeignKey('sources.id',ondelete='RESTRICT'),index=True)
+    content: Mapped[str] = mapped_column(sa.String(8000))
+    quote_chunk_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    quote_text: Mapped[str | None] = mapped_column(sa.Text)
+    start_ms: Mapped[int | None] = mapped_column(sa.BigInteger)
+    end_ms: Mapped[int | None] = mapped_column(sa.BigInteger)
+    favorite: Mapped[bool] = mapped_column(sa.Boolean,server_default=sa.false())
+    archived: Mapped[bool] = mapped_column(sa.Boolean,server_default=sa.false())
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True),server_default=sa.func.now())

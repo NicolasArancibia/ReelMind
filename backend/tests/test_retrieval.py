@@ -136,7 +136,42 @@ def test_index_excludes_experimental_and_uncertain_visual_evidence():
         calls=0
         def scalars(self,query):
             self.calls+=1
-            return SimpleNamespace(all=lambda:[] if self.calls==1 else rows)
+            return SimpleNamespace(all=lambda:rows if self.calls==2 else [])
     chunks=snapshots(FakeSession())
     assert len(chunks)==1 and chunks[0]['origin']['evidence_id']=='v0'
     assert chunks[0]['content']=='Texto observado\nTexto visible: Una frase'
+
+
+def test_index_resumes_only_confirmed_batches(client,indexed_source,database):
+    from app.models import NoteRevision
+    from uuid import uuid4
+    with Session(database[0]) as session:
+        session.add_all([NoteRevision(id=uuid4(),version=1,source_id=UUID(indexed_source['id']),content=f'Idea personal {i}') for i in range(129)])
+        session.commit()
+    calls=[]
+    def interrupted(payload,cancelled):
+        calls.append(len(payload['texts']))
+        if len(calls)==2:raise Cancelled()
+        return {'vectors':[VECTOR for _ in payload['texts']]}
+    app.state.retrieval.runner=interrupted
+    stopped=run(client,'index');assert stopped['status']=='stopped' and calls==[128,2]
+    with Session(database[0]) as session:
+        assert session.scalar(select(func.count()).select_from(ChunkEmbedding))==128
+        assert len(missing_chunks(session,PROFILE['profile_id'])[0])==2
+    app.state.retrieval.runner=lambda payload,cancelled:{'vectors':[VECTOR for _ in payload['texts']]}
+    resumed=run(client,'index');assert resumed['status']=='completed' and resumed['added']==2
+
+
+def test_retrieval_respects_current_project_membership(client,indexed_source):
+    run(client,'index')
+    project=client.post('/api/projects',json={'name':'Solo estas fuentes'}).json()
+    url='/api/projects/'+project['id']+'/sources/'+indexed_source['id']
+    client.put(url)
+    def query():
+        response=client.post('/api/retrieval/tasks',json={'action':'chat','query':'¿Qué dice?','project_id':project['id']})
+        assert response.status_code==202,response.text
+        finish(app.state.retrieval)
+        return client.get('/api/retrieval/tasks/'+response.json()['id']).json()
+    assert len(query()['selected'])==1
+    client.delete(url)
+    assert query()['selected']==[]

@@ -2,7 +2,7 @@ $ReelMindRoot = Split-Path -Parent $PSScriptRoot
 
 function Initialize-ReelMindFrontendModules($runtime) {
     $taskSource=[IO.Path]::GetFullPath((Join-Path $ReelMindRoot 'frontend\node_modules'))
-    $taskLocalRoot=[IO.Path]::GetFullPath((Split-Path -Parent (Get-ReelMindDataRoot $runtime)))
+    $taskLocalRoot=[IO.Path]::GetFullPath((Split-Path -Parent (Split-Path -Parent $runtime.CredentialPath)))
     $taskDestination=[IO.Path]::GetFullPath((Join-Path $taskLocalRoot 'dependencies\frontend\node_modules'))
     $taskProjectRoot=[IO.Path]::GetFullPath($ReelMindRoot).TrimEnd('\')+'\'
     if(-not $taskSource.StartsWith($taskProjectRoot,[StringComparison]::OrdinalIgnoreCase) -or
@@ -43,4 +43,10 @@ function Get-ReelMindRuntime {
         CredentialPath = (Join-Path $env:LOCALAPPDATA 'ReelMind\secrets\postgres-app.xml')
         AdminCredentialPath = (Join-Path $env:LOCALAPPDATA 'ReelMind\secrets\postgres-admin.xml')
     }
+}
+
+function Get-ReelMindDatabaseName($runtime) {
+    $taskDatabase=if($runtime.DatabaseName){[string]$runtime.DatabaseName}else{'reelmind'}
+    if($taskDatabase -notmatch '^[A-Za-z_][A-Za-z0-9_]{0,62}$'){throw 'Nombre de base local no válido.'}
+    return $taskDatabase
 }

@@ -153,7 +153,7 @@ Plan ejecutado: revisar acceso/operación; reproducir dependencias y compilació
 
 ## Plan de cierre del producto 1.0
 
-**Propuesto el 2026-11-01, tras revisión de interfaz y código; sin implementar.** [ADR 0015](decisions/0015-cierre-producto-personal.md). Prioridad confirmada por el usuario: las tres funciones juntas — reunir reels, comprender/guardar lo importante y organizar/conectar/consultar. Este bloque amplía el cierre inicial técnico de las fases 0–7; no borra ni contradice sus evidencias ni supone que el producto ya esté terminado.
+**Implementación autorizada el 2026-11-01 por «implementa todo lo que falta»; en curso.** [ADR 0015](decisions/0015-cierre-producto-personal.md). Prioridad confirmada por el usuario: las tres funciones juntas — reunir reels, comprender/guardar lo importante y organizar/conectar/consultar. Este bloque amplía el cierre inicial técnico de las fases 0–7; no borra ni contradice sus evidencias ni supone que el producto ya esté terminado.
 
 ### Resultado que debe cumplir la versión final
 
@@ -181,6 +181,12 @@ Desde el escritorio, incorporar varios reels, reconocer su tema, analizar manual
 - Límites explícitos en código: selector de proyectos carga primeras 100 fuentes; historial lista últimas 50 conversaciones sin paginación; contexto de recuperación usa solo la pregunta anterior; índice inicial hasta 2000 fragmentos, coseno mínimo 0,5 provisional. No se probaron bibliotecas grandes y no se asume que estas limitaciones estén resueltas.
 - Sin módulos de apuntes/destacados ni gestión de conversaciones en las rutas/componentes revisados. Proyecto permite crear/asociar/quitar, pero no renombrar/archivar. La interfaz aún muestra «Conexiones» como futuro aunque el grafo vive dentro de Proyectos; aclarar navegación.
 - Último estado leído: esquema 0008_graph, motor detenido, ninguna consulta activa, índice 8/8. Se reutilizan evidencias de integridad/recuperación existentes; no se repitió una suite general, una restauración ni un análisis. Revisión visual de escritorio, sin certificación WCAG ni ensayo de rendimiento/compatibilidad.
+
+### Estado de implementación — 2026-11-01
+
+Bloques **8–13 implementados** en el alcance funcional descrito abajo; ver [comprobaciones y límites](verification/product1.md) y [ADR 0016](decisions/0016-conocimiento-personal-y-operacion.md). Punto Git local conservado; esquema actual 0010. Apuntes, reproducción por cita, lotes, filtros, chat con respuestas/citas, gestión de historial/proyectos/taxonomía, conexiones de ideas y operación guiada integrados. Entrega elegida: lanzadores CMD más ventana Tkinter, sin nuevas dependencias de empaquetado. Enlaces sin descarga: se informa la limitación y se ofrece copia local. No hay clasificación/conexiones automáticas; propuestas y relaciones se revisan.
+
+**14 en aceptación:** pruebas dirigidas, compilación, navegación real y recuperación exacta ejecutadas; el usuario aún debe completar el recorrido con su colección habitual y valorar respuestas/resúmenes/comparaciones. No se marca 1.0 aceptada. No se ensayó una biblioteca grande ni otra máquina. Destino de respaldo fuera del disco y retención automática quedan sujetos a elección del usuario; no hay automatización configurada. El plan original de bloques se conserva como criterio de aceptación, sin volver a diseñarlo.
 
 ### Orden de ejecución y cierre por bloque
 
@@ -241,7 +247,7 @@ Desde el escritorio, incorporar varios reels, reconocer su tema, analizar manual
 
 ### Límites del nuevo plan
 
-Móvil/Supabase/sincronización siguen fuera. No multiusuario, servicios pagados, agentes ejecutando acciones externas, automatización de análisis al abrir, nuevas modalidades o selección de modelos por consumo. Un instalador no sustituye las mejoras funcionales centrales. Las tareas anteriores son propuestas de continuación, no funciones ya implementadas ni autorización para ejecutarlas dentro de esta revisión.
+Móvil/Supabase/sincronización siguen fuera. No multiusuario, servicios pagados, agentes ejecutando acciones externas, automatización de análisis al abrir, nuevas modalidades o selección de modelos por consumo. Un instalador no sustituye las mejoras funcionales centrales. El usuario autorizó después implementar el plan completo. Marcar cada cierre solo tras comprobarlo; no confundir código escrito con aceptación final.
 
 ## Aplazado y decisiones abiertas
 

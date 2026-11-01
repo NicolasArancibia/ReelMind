@@ -156,3 +156,9 @@ Aplicar en base vacía y en una copia con datos; comprobar duplicados, FK, inter
 ## Grafo inicial aplicado, 2026-11-01
 
 `0008_graph`: relation_revisions(id UUID, version entero > 0, PK compuesta; project_id/from_source_id/to_source_id FK RESTRICT; extremos distintos; label varchar(120) y evidence varchar(2000) no vacíos; review_status proposed/accepted/rejected; created_at). Revisiones insertadas sin sobrescritura por API; control optimista expected_version y bloqueo por proyecto. Nodos reutilizan UUID de Source; las tablas knowledge_nodes/knowledge_edges anteriores eran propuestas y no se aplicaron. [ADR 0013](decisions/0013-grafo-trazable.md).
+
+## Conocimiento personal aplicado — 2026-11-01
+
+`0009_personal_library` añade sources.favorite/summary; projects.archived_at; chat_sessions.archived_at/project_id; y note_revisions, con PK(id,version), source_id, contenido humano, cita exacta opcional, tiempos, favorito/archivo y fecha. Una FK compuesta de cita obliga a compartir fuente. Content_chunks añade note_id/note_version, FK a esa revisión/fuente y origen exclusivo entre audio, audiovisual y apunte. No se sobrescriben notas al editar/reprocesar. La consulta habitual selecciona la última revisión activa; las anteriores permanecen para historial y citas de Chat.
+
+`0010_idea_connections` añade from/to_note_id/version a relation_revisions, con pares completos y FK compuestas a revisión/fuente. Una relación conserva la revisión de apunte que la motivó. Se permiten ideas distintas de una misma fuente; no el mismo extremo consigo mismo. Archivar una idea o retirar una fuente oculta la relación sin eliminarla. Las dos migraciones se aplicaron con respaldo y Alembic Check correcto; recuperación exacta de 23 tablas comprobada. [ADR 0016](decisions/0016-conocimiento-personal-y-operacion.md).

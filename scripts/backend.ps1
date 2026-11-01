@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([ValidateSet('Run', 'Migrate', 'Test', 'Check', 'PrepareSearch')][string]$Action = 'Run')
+param([ValidateSet('Run', 'Migrate', 'Test', 'Check', 'PrepareSearch','PrepareAudio','PrepareAV','RecoveryCheck')][string]$Action = 'Run')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 $runtime = Get-ReelMindRuntime
@@ -9,11 +9,13 @@ $pythonPath = $runtime.PythonPath
 if (-not (Test-Path -LiteralPath $pythonPath)) {
     throw 'Backend environment missing. Run scripts/setup.ps1 first.'
 }
+$previousDatabase = $env:PGDATABASE
 $previousPassword = $env:PGPASSWORD
 $previousUser = $env:PGUSER
 $previousDataRoot = $env:REELMIND_DATA_ROOT
 $commandExit = 1
 try {
+    if (-not $env:PGDATABASE) { $env:PGDATABASE = Get-ReelMindDatabaseName $runtime }
     if (-not $env:REELMIND_DATA_ROOT) { $env:REELMIND_DATA_ROOT = Get-ReelMindDataRoot $runtime }
     if (-not $env:PGPASSWORD) {
         $credential = Import-Clixml -LiteralPath $runtime.CredentialPath
@@ -41,11 +43,15 @@ try {
             }
             'Test' { & $pythonPath -m pytest }
             'Check' { & $pythonPath -m alembic check }
+            'RecoveryCheck' { & $pythonPath -m app.recovery_smoke }
+            'PrepareAudio' { & $pythonPath -m app.prepare_audio }
+            'PrepareAV' { & $pythonPath -m app.prepare_av }
             'PrepareSearch' { & $pythonPath -m app.prepare_search }
         }
         $commandExit = $LASTEXITCODE
     } finally { Pop-Location }
 } finally {
+    $env:PGDATABASE = $previousDatabase
     $env:PGPASSWORD = $previousPassword
     $env:PGUSER = $previousUser
     $env:REELMIND_DATA_ROOT = $previousDataRoot

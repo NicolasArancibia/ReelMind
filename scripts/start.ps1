@@ -35,10 +35,12 @@ $vitePath = Join-Path $ReelMindRoot 'frontend\node_modules\vite\bin\vite.js'
 if (-not (Test-Path -LiteralPath $vitePath)) { throw 'Run scripts/setup.ps1 first.' }
 if (-not (Test-Path -LiteralPath (Join-Path $ReelMindRoot 'frontend\dist\index.html'))) { throw 'Frontend build missing. Run npm.cmd run build in frontend.' }
 $records = @()
+$previousDatabase = $env:PGDATABASE
 $previousPassword = $env:PGPASSWORD
 $previousUser = $env:PGUSER
 $previousDataRoot = $env:REELMIND_DATA_ROOT
 try {
+    if (-not $env:PGDATABASE) { $env:PGDATABASE = Get-ReelMindDatabaseName $runtime }
     if (-not $env:REELMIND_DATA_ROOT) { $env:REELMIND_DATA_ROOT = Get-ReelMindDataRoot $runtime }
     $credential = Import-Clixml -LiteralPath $runtime.CredentialPath
     $env:PGPASSWORD = $credential.GetNetworkCredential().Password
@@ -74,6 +76,7 @@ try {
     }
     throw
 } finally {
+    $env:PGDATABASE = $previousDatabase
     $env:PGPASSWORD = $previousPassword
     $env:PGUSER = $previousUser
     $env:REELMIND_DATA_ROOT = $previousDataRoot

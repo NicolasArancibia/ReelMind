@@ -15,12 +15,14 @@ def main():
     def progress(value):
         nonlocal stage
         stage = value
+        (work/'progress.json').write_text(json.dumps({'stage':value}),encoding='utf-8')
     def checkpoint(rows):
         (work / 'evidence.json').write_text(json.dumps(rows, ensure_ascii=False), encoding='utf-8')
     try:
         with path.open("rb") as stream:
             if hashlib.file_digest(stream, "sha256").hexdigest() != checksum:
                 raise ValueError("checksum")
+        progress('audio')
         result = analyze(path, work, model)
         if len(sys.argv) > 5 and sys.argv[5] == 'audiovisual':
             from app.audiovisual import analyze as analyze_av, LocalVision, LocalText

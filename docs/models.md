@@ -26,3 +26,9 @@ La [documentación oficial](https://github.com/pgvector/pgvector#windows) descri
 Small CPU int8, beam 5 y VAD: seis muestras humanas chilenas, 33,109 s de audio en 30,441 s totales, pico RSS muestreado 632,2 MiB. WER simple 2/57, una diferencia numérica. Silencio/tono sin texto; ausencia de pista reconocida. [Método, versiones, hashes y límites](verification/phase2.md).
 
 Se elige esta configuración inicial porque funciona en Python 3.13 con el equipo disponible y evita instalar CUDA/cuDNN. No es una comparación contra GPU ni prueba de superioridad de small frente a otros tamaños. Modelo intercambiable mediante adaptador; no se evaluaron ruido, música, vídeos largos ni habla superpuesta. Revisión fijada por el script de preparación, inferencia offline y liberación entre trabajos. No descargar anticipadamente los modelos de fases posteriores.
+
+## Chat explicativo con evidencia — 2026-11-01
+
+Se conserva el modelo local de texto Instruct ya preparado; no se cambia el modelo de audio. El nuevo modo explicativo redacta en español con hasta cuatro afirmaciones, cada una vinculada a una cita literal exacta y un fragmento permitido. Rechaza números nuevos y somete el resultado a una verificación adicional del mismo modelo. Si falla la validación, devuelve selección extractiva. Un saludo o petición de ayuda de uso no ejecuta modelos. Los apuntes personales se identifican como origen humano en recuperación.
+
+La verificación automática puede equivocarse: no certifica veracidad ni permite completar datos ausentes. Caso real de Figma/Notion respondió con cita e instante correctos; una pregunta de receta inexistente devolvió falta de evidencia. No se hizo benchmark/comparación ni una evaluación general de calidad. [Evidencias y límites](verification/product1.md).

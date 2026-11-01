@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     pg_host: str = Field(default="127.0.0.1", validation_alias="PGHOST")
     pg_port: int = Field(default=5432, validation_alias="PGPORT", ge=1, le=65535)
-    pg_database: str = Field(default="reelmind", validation_alias="PGDATABASE")
+    pg_database: str = Field(default="reelmind", validation_alias="PGDATABASE", pattern=r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
     pg_user: str = Field(default="reelmind_app", validation_alias="PGUSER")
     pg_password: SecretStr = Field(validation_alias="PGPASSWORD")
     processing_autostart: bool = Field(

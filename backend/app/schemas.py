@@ -41,6 +41,8 @@ class SourceUpdate(SourceMutation):
 
 
 class SourceRead(BaseModel):
+    favorite: bool = False
+    summary: str | None = None
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     platform: str
@@ -96,6 +98,8 @@ class JobRead(BaseModel):
 
 
 class OrganizationUpdate(SourceMutation):
+    favorite: bool = False
+    summary: str | None = Field(default=None,max_length=4000)
     tags: list[str] = Field(max_length=20)
     categories: list[str] = Field(max_length=10)
 

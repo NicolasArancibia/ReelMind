@@ -94,3 +94,11 @@ Navegación por hash `#library`, `#chat`, `#projects`; Chat conserva estado al c
 ## Mantenimiento explícito — Fase 7
 
 CLI local sin endpoints de restauración: snapshot PostgreSQL compartido con pg_dump/inventario, medios inmutables por SHA-256 y copia fuera de OneDrive. API detenida y reserva pesada durante backup. Restauración exclusivamente en base/raíz generadas nuevas, validación de tablas y medios antes de marcar verificada. No cambia runtime principal, no inicia IA ni incorpora modelos/secretos. [ADR 0014](decisions/0014-recuperacion-entrega-local.md).
+
+## Producto personal integrado — 2026-11-01
+
+La capa notebook conserva apuntes humanos y citas versionadas; retrieval_data incorpora solo revisiones actuales activas al índice. Cada lote de 128 fragmentos se confirma en una transacción y se puede retomar por nueva orden manual. Chat mantiene tres preguntas previas y filtros por pertenencia actual al proyecto/fuentes. La respuesta explicativa local exige cita literal por afirmación y verificación; ante salida no válida usa selección extractiva. Esto no acredita veracidad factual. Saludos/ayuda se resuelven sin IA.
+
+Las acciones de biblioteca por selección son atómicas. La reserva transaccional de organización ordena altas/renombres/asociaciones de etiquetas; Source.updated_at sigue protegiendo formularios antiguos. El grafo añade apuntes versionados y una lista navegable hacia originales. Se preservan transcripciones, análisis y relaciones anteriores.
+
+El diagnóstico web es de lectura (más renombrado de taxonomía/exportación), sin endpoint para ejecutar scripts. Mantenimiento es una ventana Tkinter iniciada por el usuario y separada del árbol de API/frontend; usa los scripts propios, espera detención y conserva los intentos. Activar una copia verificada cambia únicamente DataRoot/DatabaseName y guarda configuración anterior. No mueve credenciales ni originales. [ADR 0016](decisions/0016-conocimiento-personal-y-operacion.md).

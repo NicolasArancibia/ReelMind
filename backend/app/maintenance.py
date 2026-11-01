@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess
-from uuid import uuid4
+from uuid import uuid4,UUID
 
 import psycopg
 from psycopg import sql
@@ -69,11 +69,13 @@ def ensure_stopped():
         if probe.connect_ex(('127.0.0.1',8000))==0: raise ValueError('Detén ReelMind antes del mantenimiento.')
 
 
-def backup():
+def backup(destination=None):
     ensure_stopped(); settings=get_settings(); root=external(settings.data_root)
     database=get_engine(); lock=ManualEngine(database).acquire()
     if lock is None: raise ValueError('Hay otra tarea pesada activa.')
-    bundle=external(root.parent/'backups'/('library-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+uuid4().hex[:8]))
+    parent=external(Path(destination)) if destination else root.parent/'backups'
+    if parent.is_relative_to(root):raise ValueError('La copia debe guardarse fuera del almacén activo.')
+    bundle=external(parent/('library-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+uuid4().hex[:8]))
     try:
         bundle.mkdir(parents=True,exist_ok=False)
         with database.connect().execution_options(isolation_level='REPEATABLE READ') as connection:
@@ -101,7 +103,7 @@ def backup():
 def validate_bundle(bundle):
     bundle=external(bundle)
     manifest=json.loads((bundle/'manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('format')!=1 or manifest.get('schema')!='0008_graph': raise ValueError('Formato/esquema de copia incompatible.')
+    if manifest.get('format')!=1 or manifest.get('schema') not in {'0008_graph','0009_personal_library','0010_idea_connections'}: raise ValueError('Formato/esquema de copia incompatible.')
     if digest(bundle/'database.dump')!=manifest['database_sha256']: raise ValueError('El respaldo SQL no coincide con el manifiesto.')
     if manifest.get('tables',{}).get('media_files',{}).get('count')!=len(manifest['files']):
         raise ValueError('El manifiesto no enumera todos los medios de la base.')
@@ -157,12 +159,52 @@ def restore_verify(bundle):
     print(json.dumps(report,ensure_ascii=False)); return report
 
 
+def temporary_candidates(root):
+    rows=[]
+    for folder in ('work','staging'):
+        base=root/folder
+        if not base.exists():continue
+        if base.is_symlink() or base.is_junction():raise ValueError('Carpeta temporal enlazada; requiere revisión manual.')
+        for parent,dirs,files in os.walk(base,followlinks=False):
+            dirs[:]=[d for d in dirs if not (Path(parent)/d).is_symlink() and not (Path(parent)/d).is_junction()]
+            for name in files:
+                path=Path(parent)/name
+                if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):continue
+                relative=path.relative_to(root).as_posix()
+                if not re.fullmatch(r'(work/[0-9a-fA-F-]{32,36}/(audio\.wav|result\.json|input\.json|evidence\.json|progress\.json)|staging/[0-9a-fA-F]{32}\.part)',relative):continue
+                if folder=='work':
+                    try:UUID(path.parent.name)
+                    except ValueError:continue
+                info=path.stat();rows.append({'relative':relative,'size_bytes':info.st_size,'mtime_ns':info.st_mtime_ns})
+                if len(rows)>=1000:return rows
+    return rows
+
+
+def clean_temporaries(selection):
+    ensure_stopped();root=external(get_settings().data_root);database=get_engine();lock=ManualEngine(database).acquire()
+    if lock is None:raise ValueError('Hay otra tarea pesada activa.')
+    try:
+        rows=json.loads(Path(selection).read_text(encoding='utf-8'))
+        if not isinstance(rows,list) or not 1<=len(rows)<=1000:raise ValueError('Selección de temporales no válida.')
+        allowed={r['relative']:r for r in temporary_candidates(root)}
+        if len({r.get('relative') for r in rows if isinstance(r,dict)})!=len(rows):raise ValueError('Selección repetida o inválida.')
+        for row in rows:
+            if not isinstance(row,dict) or allowed.get(row.get('relative'))!=row:raise ValueError('Un temporal cambió o no está permitido. Actualiza la lista.')
+        for row in rows:contained(root,row['relative']).unlink()
+        result={'removed':len(rows),'originals_removed':False};print(json.dumps(result));return result
+    finally:ManualEngine.release(lock);database.dispose()
+
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('action',choices=['backup','restore-verify']);parser.add_argument('--bundle',type=Path)
+    parser=argparse.ArgumentParser();parser.add_argument('action',choices=['backup','restore-verify','list-temporaries','clean-temporaries']);parser.add_argument('--bundle',type=Path)
+    parser.add_argument('--destination',type=Path);parser.add_argument('--selection',type=Path)
     args=parser.parse_args()
     try:
-        if args.action=='backup': backup()
-        elif args.bundle: restore_verify(args.bundle)
+        if args.action=='backup': backup(args.destination)
+        elif args.action=='list-temporaries':
+            ensure_stopped();print(json.dumps({'temporaries':temporary_candidates(external(get_settings().data_root)),'limit':1000}))
+        elif args.action=='clean-temporaries' and args.selection:clean_temporaries(args.selection)
+        elif args.action=='restore-verify' and args.bundle: restore_verify(args.bundle)
         else: parser.error('--bundle es obligatorio para restaurar una copia.')
     except Exception as exc:
         # Avoid secret-bearing exception strings from drivers or subprocesses.

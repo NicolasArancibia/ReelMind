@@ -1,8 +1,19 @@
 # ReelMind
 
-Biblioteca personal de vídeos, local en Windows. **Fases 0–3 completadas en su alcance inicial: biblioteca, audio, motor manual y ficha audiovisual con evidencias.** Prioridad: terminar la aplicación de escritorio; captura móvil y Supabase aplazados. [Estado y comprobaciones](docs/status.md). El cierre técnico inicial se amplía con el [plan de producto 1.0](docs/roadmap.md#plan-de-cierre-del-producto-10), propuesto para reunir, comprender, guardar, organizar y consultar reels de forma integrada.
+Biblioteca personal de vídeos, local en Windows: reunir reels, analizar su contenido, guardar ideas, organizarlas, conectarlas y conversar con citas. El [plan de producto 1.0](docs/roadmap.md#plan-de-cierre-del-producto-10) está implementado en su alcance funcional de escritorio; queda la aceptación final con tu colección. [Estado y comprobaciones](docs/status.md). Móvil y Supabase están aplazados.
 
-**Búsqueda y consultas locales de Fase 5 implementadas y verificadas técnicamente.** Abre **Chat** en la navegación: historial lateral y mensajes en una vista propia. En **Biblioteca disponible** puedes actualizar el índice después de analizar vídeos; escribe un mensaje y pulsa Enter para enviarlo (Mayús+Enter añade línea). Las respuestas muestran pasajes exactos con fuente, versión y tiempo y permiten abrir la ficha. No inician análisis de vídeos, no traducen ni completan datos ausentes. El historial queda en este equipo. [Evidencias y límites](docs/verification/phase5.md).
+**Chat local con fuentes.** Abre **Chat**, actualiza manualmente el índice en **Biblioteca disponible** después de analizar vídeos o editar apuntes, y escribe tu mensaje. Enter envía y Mayús+Enter añade línea. Puedes consultar toda la biblioteca, un proyecto o una fuente. **Explicar con citas** responde en español con el modelo local; **Solo citas originales** conserva los pasajes literales. La explicación vuelve a citas si no pasa la validación. Revisa siempre el original: las respuestas pueden contener errores. [Comprobaciones actuales y límites](docs/verification/product1.md).
+
+## Recorrido cotidiano
+
+- **Biblioteca:** incorpora varios archivos/enlaces desde **Incorporar varios reels**. Cada elemento muestra su resultado; guardados/duplicados salen del lote y los pendientes pueden corregirse y reintentarse. Guardar no descarga enlaces ni inicia análisis. Adjunta una copia local cuando solo tengas un enlace.
+- **Organizar:** cambia título, resumen revisado, favorito, categorías y etiquetas. Una propuesta desde observaciones existentes requiere revisión. Selecciona varias fuentes para clasificar, asociar a un proyecto o preparar pendientes en una sola operación; el motor sigue detenido.
+- **Ficha y audio:** reproduce la copia local y guarda apuntes, rangos y favoritos. **Guardar destacado** desde Chat conserva la cita exacta junto a tu comentario. Editar añade una versión; archivar/restaurar conserva el historial. Los tiempos abren el momento original cuando hay una única copia reproducible.
+- **Mis ideas:** busca en apuntes y citas, filtra por proyecto/etiqueta/favorito/archivo y vuelve a la ficha. Exporta Markdown o JSON desde la ficha.
+- **Chat:** busca contenido o conversa con contexto acotado. Renombra, busca, archiva/restaura y exporta conversaciones; copia respuestas con citas. Una conversación conserva su proyecto y se recupera al recargar. Para cambiar de proyecto, abre un chat nuevo.
+- **Proyectos:** agrupa fuentes, renombra/archiva/restaura proyectos y conecta fuentes o revisiones concretas de apuntes. Las relaciones tienen motivo/evidencia, estado e historial. Puedes recorrer el grafo o su lista equivalente.
+- **Ajustes:** consulta actividad, almacenamiento y preparación local; detén la tarea actual, renombra etiquetas/categorías o exporta una copia legible de la biblioteca.
+- **Mantenimiento ReelMind.cmd:** crea una copia completa, verifica una restauración aislada, migra/activa una copia y vuelve a la configuración anterior, sin editar comandos. Cada cambio conserva el original. Las copias no incluyen modelos ni se cifran automáticamente; elige otro disco para protegerte de un fallo físico. No hay limpieza automática: los temporales se revisan y confirman por selección.
 
 ## Abrir y cerrar
 
@@ -68,7 +79,7 @@ powershell -NoProfile -File .\scripts\backend.ps1 -Action Migrate
 powershell -NoProfile -File .\scripts\start.ps1 -OpenBrowser
 ```
 
-`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. La revisión actual es `0005_audiovisual`; las migraciones previas aplicadas permanecen intactas. `start.ps1` sirve la compilación local en 5180 y la API en 8000. El motor arranca detenido; solo Iniciar lanza trabajo pesado.
+`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. La revisión actual es `0010_idea_connections`; las migraciones previas aplicadas permanecen intactas. `start.ps1` sirve la compilación local en 5180 y la API en 8000. El motor arranca detenido; solo Iniciar lanza trabajo pesado.
 
 Para preparar el audio por primera vez, con la aplicación detenida y conexión a Internet:
 

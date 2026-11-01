@@ -1,4 +1,6 @@
 export interface Source {
+  favorite: boolean
+  summary: string | null
   id: string
   original_url: string | null
   source_type: 'url' | 'file'

@@ -7,7 +7,7 @@ from pathlib import Path
 from huggingface_hub import HfApi, snapshot_download
 
 
-def main():
+def provision():
     root = Path(os.environ["REELMIND_DATA_ROOT"]).resolve()
     model = os.environ.get("REELMIND_WHISPER_MODEL", "small")
     if model not in {"tiny", "base", "small", "medium"}:
@@ -33,6 +33,14 @@ def main():
                                                         "model_sha256": checksum}, indent=2), encoding="utf-8")
     print(f"Modelo {model} preparado: revisión {revision}; SHA-256 {checksum}")
 
+
+def main():
+    from app.db import get_engine
+    from app.processing import ManualEngine
+    database=get_engine(); lock=ManualEngine(database).acquire()
+    if lock is None:raise RuntimeError('Hay otra tarea pesada activa.')
+    try:provision()
+    finally:ManualEngine.release(lock);database.dispose()
 
 if __name__ == "__main__":
     main()
