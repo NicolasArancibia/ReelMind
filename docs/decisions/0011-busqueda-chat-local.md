@@ -1,0 +1,17 @@
+# 0011 — Recuperación semántica y chat locales
+
+Fecha: 2026-11-01. Estado: implementada y verificada técnicamente en el alcance inicial de Fase 5; revisión de uso pendiente.
+
+Se conserva PostgreSQL 18 local. pgvector v0.8.7 se compiló desde fuente oficial con Visual Studio Build Tools C++ x64 existente. La copia a Program Files necesitó ejecución administrativa del usuario; extensión habilitada solo en la base ReelMind. Migración `0006_retrieval` aplicada con respaldo previo y esquema sin diferencias. Sin Docker, servicios remotos o nuevos compiladores.
+
+Embeddings: BGE-M3 567M, perfil denso de 1024 dimensiones comprobado por inferencia, por el requisito multilingüe español/inglés. Es la alternativa multilingüe prevista al candidato original; sin comparativa de rendimiento ni consumo. Modelo/digest/configuración y versión del fragmentador definen un espacio independiente. Búsqueda exacta por coseno, sin HNSW. Texto: Qwen3 Instruct 4B ya preparado. El manifest externo `models/search.json` fija digests; inferencia comprueba inventario y falla si cambió, sin descarga implícita.
+
+Indexación y preguntas son acciones explícitas. El trabajador retiene el bloqueo PostgreSQL global y protege procesos descendientes con Job Object; indexar/buscar/chat no pueden coincidir con audio/visión. Inferencia cancelable fuera de HTTP. Abrir o reiniciar no indexa ni reintenta. Índice nuevo por transacción, conservando fragmentos históricos para citas; recuperar solo fuentes activas y versiones actuales del perfil seleccionado. Cambiar versiones exige indexación manual, no mezclar espacios ni reutilizar resultados obsoletos silenciosamente.
+
+Fragmentos de segmentos de audio y observaciones visuales claras; no indexar paráfrasis experimentales ni OCR marcado no fiable. Cada fragmento conserva fuente, versión, origen, tiempo y hash. Chat inicialmente extractivo: el modelo selecciona pasajes recuperados mediante IDs cerrados y la aplicación cita el texto exacto. No afirmar una respuesta general cuando falta evidencia, ni ejecutar instrucciones del contenido importado. Las puntuaciones no son probabilidades de veracidad.
+
+Una fila de `retrieval_tasks` conserva cada pregunta y resultado del turno; `chat_sessions` agrupa el historial. Se evita duplicar mensajes en otra tabla mientras la respuesta sea selección extractiva. El resultado guarda IDs/puntuaciones, no copias de texto; al leer se resuelven las citas y se ocultan fuentes en papelera. Búsquedas antiguas ocultan versiones superadas; el historial de chat conserva citas anteriores marcadas como tales. No hay purga de fragmentos. Contexto: última pregunta anterior, acotada, solo para resolver referencias; no memoria general del asistente.
+
+Límites iniciales: 1200 caracteres por fragmento, hasta 2000 en la indexación inicial atómica, hasta seis candidatos recuperados y cuatro seleccionados. Umbral de coseno 0,5 provisional, sin calibración general; dos preguntas reales no equivalen a un estudio de relevancia. La selección reduce candidatos si excede el contexto admitido, sin reescribir citas. No traducción automática ni respuesta libre con conocimientos externos. [Verificación](../verification/phase5.md).
+
+Fuentes: [pgvector y Windows](https://github.com/pgvector/pgvector#windows), [API de embeddings](https://docs.ollama.com/api/embed), [BGE-M3](https://huggingface.co/BAAI/bge-m3), [distribución Ollama](https://ollama.com/library/bge-m3).

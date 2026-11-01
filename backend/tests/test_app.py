@@ -61,10 +61,10 @@ def test_health_never_starts_processing(client):
     for _ in range(2):
         response = client.get("/api/health")
         assert response.status_code == 200
-        assert response.json()["processing"] == {
-            "state": "stopped", "available": False, "autostart": False, "concurrency": 1,
-        }
-    assert client.post("/api/processing/start").status_code == 404
+        state = response.json()["processing"]
+        assert state["state"] == "stopped" and state["autostart"] is False
+        assert state["concurrency"] == 1
+    assert client.post("/api/processing/start").status_code == 409  # No model in isolated data root.
 
 
 def test_reapplying_migration_preserves_records(client, database):

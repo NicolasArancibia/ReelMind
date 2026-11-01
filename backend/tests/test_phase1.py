@@ -217,7 +217,7 @@ def test_queue_cancel_requeue_trash_restore_and_persistence(client, database):
     database[0].dispose()
     assert client.get("/api/sources?view=queue").json()["total"] == 2
     assert client.get("/api/health").json()["processing"]["state"] == "stopped"
-    assert client.post("/api/processing/start").status_code == 404
+    assert client.post("/api/processing/start").status_code == 409
 
 
 @pytest.mark.parametrize("database", ["0001_sources"], indirect=True)

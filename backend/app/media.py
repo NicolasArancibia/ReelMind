@@ -93,6 +93,8 @@ async def import_video(
         if source_id is not None:
             source = locked_source(session, source_id)
             check_version(source, mutation)
+            if source.job and source.job.status == "running":
+                raise HTTPException(409, "Detén el motor antes de adjuntar a esta fuente.")
             if source.deleted_at is not None:
                 raise HTTPException(409, "Restaura la fuente antes de adjuntar archivos.")
         elif physical is not None:

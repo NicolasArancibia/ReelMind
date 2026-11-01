@@ -47,8 +47,9 @@ def media_root(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def client(database):
+def client(database, monkeypatch):
     engine, _ = database
+    monkeypatch.setattr("app.main.get_engine", lambda: engine)
 
     def isolated_session():
         with Session(engine) as session:

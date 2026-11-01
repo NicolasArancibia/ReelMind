@@ -1,8 +1,21 @@
 # Diseño de datos y migraciones
 
-**Estado: `0001_sources` y `0002_library` aplicadas. Fase 1 implementada; las secciones de audio, análisis, sincronización, búsqueda semántica y proyectos siguen siendo diseño futuro.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar la revisión ya aplicada: usar nuevas migraciones.
+**Estado: revisiones `0001_sources` a `0005_audiovisual` aplicadas. Biblioteca y audio verificados; fichas audiovisuales implementadas, en evaluación de Fase 3. Sincronización, búsqueda semántica y proyectos siguen como diseño futuro. El diseño histórico más abajo se sustituye por el esquema implementado descrito aquí.** Referencia: plan v1.3, páginas 12-14 y 17. SQLAlchemy y Alembic materializarán las entidades restantes en sus fases. No modificar una revisión aplicada: usar nuevas migraciones.
 
 La revisión inicial incluye las columnas de sources, checks de plataforma/tipo/estado/URL obligatoria, índice único parcial de canonical_url e índices de plataforma y estado/fecha. El título admite 240 caracteres. La API guarda enlaces HTTP/HTTPS sin credenciales, conserva la URL original y usa una normalización conservadora para duplicados. No descarga medios de enlaces. Desde `0002_library`, el alta crea un pendiente en la misma transacción.
+
+## Esquema de audio aplicado
+
+Fase 3 añade `audiovisual_analyses`: UUID; source_id/asset_id/transcript_id FK RESTRICT; transcript_id único; version positiva con UNIQUE(source_id,version); payload JSONB (evidencias, síntesis, cobertura y procedencia); created_at. FK compuesta (transcript_id,source_id,asset_id) a transcripts(id,source_id,asset_id), con UNIQUE de referencia nuevo: no admite transcripción de otra fuente/archivo. Ficha y transcripción nuevas se confirman en la misma transacción.
+
+- `processing_jobs`: conserva fila única por fuente; admite pending, cancelled, running, completed, failed, stopped y unavailable; añade `run_id` nullable y `error_message`.
+- `engine_state`: fila única id=1; stopped/running/pause_requested/paused/stop_requested, run_id y updated_at. El arranque la recupera detenida únicamente si obtiene la reserva global.
+- `processing_attempts`: UUID, job_id FK RESTRICT e índice, estado, inicio/fin y mensaje de fallo. Se añade un intento por reclamación; no se sobrescribe historial al reintentar.
+- `transcripts`: UUID, source_id FK e índice, asset_id FK, attempt_id FK único, version positiva, outcome (speech/no_speech/no_audio), language nullable, duration_ms no negativa, provenance JSONB y created_at. UNIQUE(source_id,version).
+- `transcript_segments`: UUID, transcript_id FK e índice, ordinal no negativo, start_ms/end_ms con `0 <= start_ms < end_ms`, texto, UNIQUE(transcript_id,ordinal).
+- `0004_audio_integrity` añade UNIQUE(media_assets.id,source_id) y FK compuesta desde transcripts(asset_id,source_id). Impide citar un activo de otra fuente incluso por escritura SQL directa.
+
+La procedencia es una instantánea por versión, no un perfil compartido mutable. Incluye hashes, revisión del modelo, configuración y versiones del pipeline. No se creó `provider_configs`: decisión concreta de Fase 2 en [ADR 0006](decisions/0006-audio-motor-manual.md). Los resultados se confirman junto al intento y estado de fuente en una transacción; los incompletos no se publican. Las migraciones anteriores aplicadas no se modificaron y hubo respaldo previo a cada ampliación.
 
 ## Convenciones SQL
 
@@ -61,7 +74,7 @@ Ruta relativa a la raíz de almacenamiento, validada en backend; `UNIQUE(local_p
 - Impedir ciclos largos de categorías mediante una comprobación recursiva dentro de una transacción que serialice cambios de jerarquía; el `CHECK` anterior solo impide autorreferencia directa. Cubrir cambios concurrentes antes de aceptar la migración.
 - `source_tags(source_id uuid FK RESTRICT, tag_id uuid FK RESTRICT, PRIMARY KEY(source_id, tag_id))` y `source_categories(source_id uuid FK RESTRICT, category_id uuid FK RESTRICT, PRIMARY KEY(source_id, category_id))`. Añadir índice por la segunda FK para búsqueda inversa. Eliminar la asociación no elimina la fuente.
 
-### processing_jobs — diseño ampliado para el motor futuro
+### processing_jobs — diseño histórico sustituido por el esquema aplicado
 
 `id uuid PK`, `source_id uuid NOT NULL REFERENCES sources(id) ON DELETE RESTRICT`, `job_type text NOT NULL` (`full_analysis`, `transcription`, `vision`, `indexing`), `status text NOT NULL DEFAULT 'pending'`, `attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0)`, `checkpoint jsonb NOT NULL DEFAULT '{}'::jsonb`, `error_message text NULL`, `created_at timestamptz NOT NULL DEFAULT now()`, `started_at`, `finished_at`, `heartbeat_at` (`timestamptz NULL`), `worker_id text NULL`.
 
@@ -69,9 +82,9 @@ Estados permitidos: `pending`, `running`, `pause_requested`, `paused`, `stop_req
 
 Propuesta: índice único parcial por `(source_id, job_type)` para estados activos/pendientes que impida encolar duplicados involuntarios. Reprocesar un trabajo finalizado crea uno nuevo, preservando historial. Fase 1 adopta FIFO; prioridades y estados adicionales se evaluarán con el motor en Fase 2.
 
-Concurrencia global: una reserva de recursos compartida con chat más reclamación transaccional de trabajos. `FOR UPDATE SKIP LOCKED` evita reclamar la misma fila, pero por sí solo no limita a un único vídeo global. Definir bloqueo del trabajador, latidos y recuperación explícita en Fase 2. No adoptar un segundo servicio de colas por defecto.
+Concurrencia global: una reserva de recursos compartida con chat más reclamación transaccional de trabajos. `FOR UPDATE SKIP LOCKED` evita reclamar la misma fila, pero por sí solo no limita a un único vídeo global. La Fase 2 aplicada usa bloqueo de sesión global y recuperación detenida; no usa latidos ni leases para recuperar un propietario que aún conserva el bloqueo. No adoptar un segundo servicio de colas por defecto.
 
-## Audio, fase 2
+## Diseño histórico de audio del plan (sustituido por el esquema aplicado anterior)
 
 | Tabla | Columnas y restricciones |
 | --- | --- |
@@ -101,12 +114,13 @@ La FK compuesta evita atribuir a una fuente un análisis de otra. Repetir la mis
 
 | Tabla | Columnas y reglas |
 | --- | --- |
-| content_chunks | id uuid PK; source_id uuid FK RESTRICT; analysis_id y transcript_id uuid NULL; ordinal integer NOT NULL CHECK >= 0; text text NOT NULL; start_ms/end_ms bigint NULL. Referencias compuestas a su misma fuente cuando corresponda. Pares de tiempos ambos nulos o `0 <= start_ms < end_ms`. Definir unicidad por versión de origen y ordinal, sin depender de NULL como igual. |
-| embeddings | id uuid PK; chunk_id uuid FK RESTRICT; model_id uuid FK RESTRICT; embedding vector(D) NOT NULL. UNIQUE(chunk_id, model_id). Dimensión y perfil fijados antes de migrar. |
-| chat_sessions | id uuid PK; title text NOT NULL; created_at. project_id se añade cuando exista projects en Fase 6. |
-| chat_messages | id uuid PK; session_id uuid FK RESTRICT; role text CHECK en `user`, `assistant`, `system`; content text NOT NULL; citations jsonb NOT NULL DEFAULT '[]'; model_id uuid NULL FK RESTRICT; created_at. |
+| embedding_profiles | id SHA-256 PK del modelo/digest/configuración/fragmentador; model, digest, dimensions CHECK = 1024, configuration JSONB. |
+| content_chunks | id uuid PK; source_id FK RESTRICT; exactamente uno de analysis_id/transcript_id; FK compuestas a la misma fuente. origin_key único por origen/ordinal/offset; content entre 1 y 1200 caracteres, content_sha256; origin JSONB con versión y evidencia; start_ms/end_ms ambos nulos o `0 <= start_ms < end_ms`; time_ms visual >= 0. |
+| chunk_embeddings | PRIMARY KEY(chunk_id, profile_id), ambas FK RESTRICT; embedding public.vector(1024) NOT NULL. Cada perfil se consulta por separado. |
+| chat_sessions | id uuid PK; title varchar(120) NOT NULL; created_at. project_id se añade cuando exista projects en Fase 6. |
+| retrieval_tasks | id uuid PK; action index/search/chat; status running/stop_requested/completed/failed/stopped; query varchar(800); session_id FK opcional; profile_id; result JSONB con IDs/puntuaciones, selección o conteos; error_message y fechas. Cada turno queda en una tarea; no tabla duplicada de mensajes. |
 
-Comenzar con búsqueda vectorial exacta. Separar dimensiones/perfiles en espacios compatibles y diseñar reindexación al cambiar modelo. HNSW solo tras mediciones. Las citas deben resolver fuente, versión y fragmento; definir relaciones normalizadas si la persistencia de referencias requiere validación por FK.
+Búsqueda exacta por coseno con operador de pgvector, sin HNSW. Fragmentos inmutables, escritura del lote en una transacción; no se borran versiones previas. Las búsquedas usan solo versiones actuales de fuentes activas. Las citas del historial se hidratan por ID y conservan versión anterior marcada; ninguna devuelve texto de papelera. IDs validados contra candidatos recuperados, sin purga de fragmentos por API. [ADR 0011](decisions/0011-busqueda-chat-local.md).
 
 ## Proyectos y grafo, fase 6
 
@@ -122,15 +136,23 @@ Comenzar con búsqueda vectorial exacta. Separar dimensiones/perfiles en espacio
 | --- | --- |
 | 0001_sources (aplicada) | Fuentes, restricciones e índices; Fase 0 |
 | 0002_library (aplicada) | Copias físicas, activos, categorías/etiquetas, asociaciones y cola detenida; Fase 1 |
-| 0002 | Perfiles, transcripciones y segmentos; fase 2 |
-| 0003 | Análisis, recursos y evidencias; fase 3 |
-| 0004 local + migración Supabase independiente | Recibos y bandeja remota; fase 4 |
-| 0005 | Fragmentos, embeddings y chat; fase 5 |
-| 0006 | Proyectos, project_id del chat y grafo; fase 6 |
+| 0003_audio y 0004_audio_integrity (aplicadas) | Motor, intentos, transcripciones, segmentos y procedencia SQL; fase 2 |
+| 0005_audiovisual (aplicada) | Fichas audiovisuales versionadas, evidencia JSON y procedencia compuesta; fase 3 |
+| Sin revisión asignada | Recibos y bandeja remota; fase 4 aplazada |
+| 0006_retrieval (aplicada) | Fragmentos, perfiles, vectores, tareas e historial extractivo; fase 5 |
+| Siguiente revisión por asignar | Proyectos, project_id del chat y grafo; fase 6 |
 | Posteriores | Integraciones que realmente necesiten datos; fase 7 |
 
-Los nombres del PDF eran hitos orientativos. Esta secuencia coloca sincronización antes de búsqueda semántica y evita crear una FK a projects antes de que exista la tabla. Las revisiones Alembic reales se generarán al implementar.
+Los nombres del PDF eran hitos orientativos. La prioridad de escritorio aplaza sincronización y adelanta la Fase 5 local; no se crea FK a projects antes de que exista la tabla. Las revisiones futuras se asignarán al implementar.
 
 ## Aceptación de cada migración
 
 Aplicar en base vacía y en una copia con datos; comprobar duplicados, FK, intervalos, estados, conservación de versiones y rollback de transacciones. Probar restauración antes de cambios destructivos. No prometer un downgrade sin verificarlo. La primera migración no habilita procesamiento automático ni descarga modelos.
+
+## Primer bloque de proyectos aplicado, 2026-11-01
+
+`0007_projects`: projects(id UUID PK, name varchar(120) no vacío, created_at); project_sources(project_id/source_id FK RESTRICT, PK compuesta, created_at e índice por source_id). No hay eliminación de fuentes al retirar asociaciones. Descripción, project_id del chat y tablas de grafo siguen propuestas, sin aplicar.
+
+## Grafo inicial aplicado, 2026-11-01
+
+`0008_graph`: relation_revisions(id UUID, version entero > 0, PK compuesta; project_id/from_source_id/to_source_id FK RESTRICT; extremos distintos; label varchar(120) y evidence varchar(2000) no vacíos; review_status proposed/accepted/rejected; created_at). Revisiones insertadas sin sobrescritura por API; control optimista expected_version y bloqueo por proyecto. Nodos reutilizan UUID de Source; las tablas knowledge_nodes/knowledge_edges anteriores eran propuestas y no se aplicaron. [ADR 0013](decisions/0013-grafo-trazable.md).

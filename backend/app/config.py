@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     max_heavy_tasks: int = Field(default=1, validation_alias="REELMIND_MAX_HEAVY_TASKS")
     data_root: Path = Field(default_factory=lambda: Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local")) / "ReelMind" / "data", validation_alias="REELMIND_DATA_ROOT")
     max_upload_bytes: int = Field(default=2 * 1024**3, ge=1, validation_alias="REELMIND_MAX_UPLOAD_BYTES")
+    whisper_model: str = Field(default="small", pattern="^(tiny|base|small|medium)$", validation_alias="REELMIND_WHISPER_MODEL")
+    audio_timeout_seconds: int = Field(default=7200, ge=10, le=86400, validation_alias="REELMIND_AUDIO_TIMEOUT_SECONDS")
 
     @model_validator(mode="after")
     def local_manual_only(self):

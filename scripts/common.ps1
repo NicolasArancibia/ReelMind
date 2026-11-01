@@ -1,5 +1,30 @@
 $ReelMindRoot = Split-Path -Parent $PSScriptRoot
 
+function Initialize-ReelMindFrontendModules($runtime) {
+    $taskSource=[IO.Path]::GetFullPath((Join-Path $ReelMindRoot 'frontend\node_modules'))
+    $taskLocalRoot=[IO.Path]::GetFullPath((Split-Path -Parent (Get-ReelMindDataRoot $runtime)))
+    $taskDestination=[IO.Path]::GetFullPath((Join-Path $taskLocalRoot 'dependencies\frontend\node_modules'))
+    $taskProjectRoot=[IO.Path]::GetFullPath($ReelMindRoot).TrimEnd('\')+'\'
+    if(-not $taskSource.StartsWith($taskProjectRoot,[StringComparison]::OrdinalIgnoreCase) -or
+       -not $taskDestination.StartsWith($taskLocalRoot.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase) -or
+       $taskDestination.StartsWith($taskProjectRoot,[StringComparison]::OrdinalIgnoreCase)) {throw 'Destino de dependencias no válido.'}
+    foreach($taskCloudRoot in @($env:OneDrive,$env:OneDriveConsumer,$env:OneDriveCommercial)) {
+        if($taskCloudRoot -and $taskDestination.StartsWith([IO.Path]::GetFullPath($taskCloudRoot).TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Las dependencias deben quedar fuera de OneDrive.'}
+    }
+    if(Test-Path -LiteralPath $taskSource) {
+        $taskItem=Get-Item -LiteralPath $taskSource
+        if($taskItem.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            if([IO.Path]::GetFullPath([string]$taskItem.Target) -ne $taskDestination){throw 'El enlace de dependencias apunta a otro destino. No se modifica.'}
+            return
+        }
+        if(Test-Path -LiteralPath $taskDestination){throw 'Existen dos carpetas de dependencias. No se sobrescribe ninguna.'}
+        New-Item -ItemType Directory -Path (Split-Path -Parent $taskDestination) -Force | Out-Null
+        # Both absolute targets were checked above. Preserve every existing file.
+        Move-Item -LiteralPath $taskSource -Destination $taskDestination
+    } else {New-Item -ItemType Directory -Path $taskDestination -Force | Out-Null}
+    New-Item -ItemType Junction -Path $taskSource -Target $taskDestination | Out-Null
+}
+
 function Get-ReelMindDataRoot($runtime) {
     if ($runtime.DataRoot) { return $runtime.DataRoot }
     # Derive from the persisted runtime, not a possibly redirected LOCALAPPDATA.

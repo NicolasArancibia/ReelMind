@@ -1,53 +1,73 @@
 # Estado del proyecto
 
-Actualizado: 2026-10-29, America/Santiago.
+Actualizado: 2026-11-01, America/Santiago.
 
 ## Resultado actual
 
-**Fases 0 y 1 completadas y verificadas.** El usuario autorizó terminar Fase 1. La biblioteca gestiona enlaces y archivos locales, títulos, categorías/etiquetas, búsqueda/filtros, papelera y pendientes. **El motor permanece detenido y aún no existe ejecución de IA.**
+**Revisión de producto y plan 1.0, 2026-11-01:** usuario prioriza el recorrido completo de reunir reels, comprender/guardar lo importante, organizar/conectar y conversar. Revisión real de Biblioteca/Chat/fichas/Proyectos y código: base inicial útil, pero faltan apuntes/destacados, reproducción por cita, captura por lotes, gestión completa de organización/chat, síntesis conversacional y operación guiada. Fallo reproducido: referencia de evidencia desde Chat cambia a Biblioteca al cerrar ficha. [Plan priorizado 8–14](roadmap.md#plan-de-cierre-del-producto-10), [ADR 0015](decisions/0015-cierre-producto-personal.md). Solo planificación/documentación, sin implementar funciones, ejecutar modelos o alterar registros.
 
-La siguiente fase es **2: audio y motor manual**, todavía no iniciada. Supabase y los demás módulos esperan sus fases.
+**Revisión para continuar, 2026-11-01:** consultas locales de lectura confirmaron health ok, esquema 0008_graph, audio/visión/búsqueda preparados, índice 8/8, dos fuentes y un proyecto; motor detenido y ninguna consulta activa. Build y enlace externo de dependencias presentes. Se corrigieron instrucciones antiguas de Chat. No se repitieron pruebas aprobadas ni se inició inferencia. Pendiente guardar un punto revisado de código en Git: 90 entradas con cambios, 61 sin seguimiento al revisar; se preservaron todos los cambios previos.
 
-## Implementado
+**Fase 7 verificada en su alcance inicial local:** respaldo coherente de 22 tablas y dos vídeos; restauración exacta en destinos nuevos, lecturas reales de API y controles Origin/Host. Cuatro pruebas dirigidas aprobadas. Dependencias Python 3.13/npm y build reproducidos en entorno externo limpio; corregidos comillas de PowerShell y npm ci sobre Junction. Base original conservada, app reabierta con motor detenido y sin consultas activas. [Evidencias y límites](verification/phase7.md), [ADR 0014](decisions/0014-recuperacion-entrega-local.md). Entrega mediante lanzadores existentes; sin EXE ni instalación del sistema desde cero.
 
-- Interfaz local con guardado de enlaces y copia de vídeos, archivos adjuntos a una fuente, edición de título, categorías y etiquetas reutilizables, búsqueda textual y filtros combinables.
-- Biblioteca, papelera y cola paginadas de 20 en 20; contadores globales separados y total filtrado. Cola en orden de llegada, con retirada y reencolado manual.
-- Duplicados de URL normalizada y contenido SHA-256; varias fuentes pueden compartir una copia física sin perder procedencia. Restauración del original cuando el duplicado está en papelera.
-- Almacenamiento fuera de OneDrive y configurable; nombres de archivo tratados como metadatos y rutas relativas validadas. El original seleccionado no se modifica. La papelera conserva todas las asociaciones y copias.
-- Protección por versión y bloqueo de fila para edición, papelera, organización, cola y adjuntos. Bloqueo PostgreSQL por hash para publicación concurrente de medios; recuperación de importaciones por reintento.
-- Migraciones `0001_sources` y `0002_library` aplicadas. La primera no se modificó. La segunda añade archivos físicos, activos, etiquetas/categorías, relaciones y pendientes, con backfill de fuentes existentes.
-- Accesos de inicio y detención; solo procesos de ReelMind. Interfaz en `http://127.0.0.1:5180`, API en `http://127.0.0.1:8000`. Puerto 5173 de otro proyecto sin cambios.
-- Credenciales PostgreSQL cifradas fuera de Git/OneDrive; `.local/runtime.json` sin contraseñas. Raíz de medios resuelta desde variable de entorno o runtime persistido. Respaldo automático antes de migrar.
-- Git local en `main`, sin remoto ni publicación. Sin nuevas dependencias, infraestructura ni modelos. PDF original conservado.
+**Fase 6 verificada técnicamente en su alcance inicial manual:** grafo Cytoscape, relaciones con nota de evidencia y estados, revisiones persistentes y rechazo de correcciones obsoletas. Seis pruebas dirigidas, compilación y Alembic aprobados. Reinicio conservó exactamente dos nodos, una relación y dos revisiones; motor detenido y ninguna consulta activa. [Verificación](verification/phase6.md), [ADR 0013](decisions/0013-grafo-trazable.md). Fase 7 completó después la restauración aislada descrita arriba.
 
-Decisiones: [0005, biblioteca completa](decisions/0005-cierre-biblioteca.md) y [0004, gestión de enlaces](decisions/0004-gestion-de-enlaces.md). Seguimiento: [plan vigente](roadmap.md) y [bitácora](bitacora.md).
+**Actualización de interfaz e inicio de Fase 6:** Biblioteca, Chat y Proyectos son vistas separadas. Chat tiene historial lateral, mensajes encadenados y editor al pie; conserva citas extractivas y contexto acotado. Proyectos permite crear y asociar/quitar fuentes sin borrarlas. `0007_projects` aplicada con respaldo; dos pruebas dirigidas aprobadas, compilación y Alembic sin diferencias. Seguimiento real «¿Y en qué momento aparece?» completado en la misma conversación con cita al segundo 37,167. Motor detenido y ninguna consulta activa al cierre. El grafo y las correcciones se completaron en la continuación descrita arriba. [ADR 0012](decisions/0012-chat-y-proyectos.md).
 
-## Comprobaciones del cierre de Fase 1
+**Fase 5 implementada y verificada técnicamente en su alcance inicial; revisión inicial aceptada por el usuario.** Búsqueda semántica y consultas extractivas con citas, índice manual e historial local. pgvector 0.8.7, BGE-M3 1024 dimensiones y Qwen3 Instruct existente; migración `0006_retrieval` aplicada con respaldo y esquema sin diferencias. Seis pruebas dirigidas y compilación aprobadas. Pregunta real en español recuperó cita del reel, v2, 0:37; pregunta sin evidencia reconocida. Reinicio conservó exactamente evidencias, índice e historial. [Verificación y límites](verification/phase5.md), [ADR 0011](decisions/0011-busqueda-chat-local.md).
 
-- **57 pruebas aprobadas** con Python 3.13.15 y esquemas PostgreSQL aislados: regresión de 1.1, archivos, validación, rutas, duplicados, concurrencia, fallos parciales y reintentos, clasificación, búsqueda/filtros, cola, migración con datos e integridad.
-- TypeScript/Vite compila. `alembic check` sin diferencias. Respaldo previo a migrar creado y esquema real en `0002_library`.
-- Recorrido de interfaz con un enlace y un AVI sintético: creación, clasificación, adjunto, importación independiente, búsqueda por etiqueta, filtro de archivos, retirada de cola, papelera y restauración.
-- Reinicio de frontend/API: mismos IDs, fechas, etiquetas, categorías, activos, estados de papelera y cola. Copia descargada idéntica por SHA-256 antes y después; motor detenido. No se reinició el servicio PostgreSQL en este cierre.
-- Escritorio y móvil de 390 px revisados sin desbordamiento horizontal. Puertos API/interfaz/PostgreSQL limitados a loopback. Los dos registros de prueba y su copia sintética administrada fueron retirados por ID/hash, conservando datos ajenos.
-- Aplicación iniciada y lista para uso local. Las capturas documentan la prueba anterior a la limpieza.
+**Fases 0–3 completadas y verificadas.** Revisión humana de Fase 3 aceptada el 2026-11-01. Prioridad: completar escritorio; Fase 4 móvil/Supabase aplazada por [ADR 0010](decisions/0010-prioridad-escritorio.md). Fase 6 verificada técnicamente en su alcance manual.
 
-[Evidencia detallada y límites](verification/phase1.md). Se conserva el aviso no bloqueante de Starlette por su adaptador de pruebas `httpx` deprecado; la suite pasa.
+**Fase 3 cerrada:** visión/síntesis extractiva locales, muestreo acotado, versiones, referencias y controles manuales. Migración `0005_audiovisual` aplicada con respaldo y esquema sin diferencias. Suite previa de 80 pruebas y 12 pruebas dirigidas tras la corrección; no se presenta una suite completa final distinta de esas evidencias. Cierre técnico con comprobaciones dirigidas y compilación por ajuste de CSS; aceptación humana registrada sin nuevas ejecuciones.
 
-## Evidencias históricas
+La consulta pendiente pudo ejecutarse en esta continuación: versiones 2 y 1 conservadas, cuatro citas de la versión 2 idénticas al texto de su evidencia, ninguna observación incierta seleccionada y cobertura explícita de ocho fotogramas. Un único reinicio conservó exactamente versiones, segmentos, evidencias y procedencia de las dos fuentes. Sin reprocesar el vídeo. Ficha revisada en escritorio y viewport móvil 390 × 844; corregido desbordamiento por nombre largo, enlace [v4] navega a evidencia de 0:29 y tamaño normal restaurado. El bloqueo de revisión automática de la sesión anterior queda resuelto para estas comprobaciones.
 
-- [Fase 0](verification/phase0.md), 2026-10-28: 19 pruebas, herramientas e inicio local, guardado de enlace y persistencia tras reiniciar API y servicio PostgreSQL. No equivale a reiniciar Windows o restaurar un respaldo.
-- [Bloque 1.1](verification/phase1-1.md), 2026-10-29: 34 pruebas, edición, papelera, restauración, paginación con 21 registros, concurrencia y recorrido de interfaz. Su incidencia de credencial quedó resuelta en esa entrega; no se publican secretos.
+**Última entrega comprobada:** conexión local activa, motor detenido, ninguna consulta activa y proveedor local liberado. Ocho fragmentos indexados y dos conversaciones conservadas. Original y análisis previos idénticos tras reinicio. Preferencia de pruebas dirigidas conservada, sin suite general repetida. [Evidencias de Fase 3](verification/phase3.md), [decisión y límites](decisions/0009-comprension-audiovisual.md).
+
+El cierre visual previo de Fase 2 mantiene su evidencia en [Fase 2](verification/phase2.md). Se conservan aquella muestra pública y su transcripción.
+
+## Configuración documental de Codex — 2026-10-31
+
+**Ampliación posterior autorizada:** cinco skills locales en `.agents/skills/`: `reelmind-preflight` (creación local) y adaptaciones de `writing-plans`, `systematic-debugging`, `impeccable` y `vercel-react-best-practices`. [ADR 0008](decisions/0008-skills-locales.md) conserva fuentes/revisiones y límites. Cinco entradas aprobadas por el validador de skills con Python 3.13.15; enlaces de las entradas comprobados y `git diff --check` correcto. Preflight recomienda brevemente modelo/esfuerzo/skills sin ejecutar, cambiar selecciones ni garantizar coste. Uso en README; reconocimiento automático/selector pendiente de uso posterior. Sin instalación global, activación de hooks o ejecución de scripts importados; aplicación y fases sin cambios.
+
+Reglas de trabajo ajustadas en [AGENTS](../AGENTS.md): lectura acotada, planes breves en el seguimiento existente, depuración con evidencia, un agente por defecto y verificaciones proporcionales. [ADR 0007](decisions/0007-flujo-codex.md) registra el inventario disponible, candidatos sin instalar y política de modelo/esfuerzo; no se pudo confirmar su selección efectiva ni se modificó configuración global o el modelo de transcripción.
+
+Encargo documental previo completado: coherencia y 35 referencias locales comprobadas; diferencias respecto del inicio revisadas y `git diff --check` sin errores. Los 34 archivos con cambios previos ajenos a aquel encargo conservaron sus hashes. Aquel trabajo no ejecutó aplicación, base, motor ni revisión visual. La continuación de producto del 2026-10-31 completó después la revisión visual descrita arriba, usando preflight y las skills computer-use y systematic-debugging.
+
+## Implementado y comprobado
+
+- Biblioteca de Fase 1 conservada: enlaces/copias por SHA-256, asociaciones, categorías/etiquetas, búsqueda/filtros, papelera, paginación y cola. Regresiones aprobadas.
+- Iniciar/Reanudar toma los pendientes existentes; importaciones/restauraciones/reencolados posteriores esperan otro inicio. Pausar termina el vídeo actual. Detener cancela el proceso y deja el actual `stopped`; reintentar exige Encolar e Iniciar.
+- Bloqueo de sesión PostgreSQL compartido para futuras tareas pesadas; un único propietario entre procesos. Audio en subproceso cancelable y Job Object Windows; preparación de modelo explícita, inferencia offline.
+- `small`, CPU int8, 4 hilos, beam 5, VAD. Sin pista → `no_audio`; silencio/tono → `no_speech` sin segmentos inventados. Enlace sin archivo → `unavailable`, sin descarga automática.
+- Versiones e intentos persistentes; segmentos temporales, activo, hashes, revisión/modelo/configuración y versiones de herramientas. Reprocesar conserva versiones anteriores. La base exige que el activo pertenezca a la fuente.
+- Migraciones `0001_sources` → `0002_library` → `0003_audio` → **`0004_audio_integrity`**. Respaldos previos a las nuevas revisiones. Ninguna migración aplicada fue reescrita.
+- Frontend con controles y consulta de transcripciones; TypeScript/Vite compila. Recorrido visual completado en escritorio y tamaño móvil.
+- `setup.ps1` conserva runtime existente y verifica Python 3.13; `prepare-audio.ps1` verifica/conserva el modelo existente.
+
+## Evidencias de este trabajo
+
+- **69 pruebas aprobadas** con Python 3.13.15 en esquemas PostgreSQL aislados; incluyen exclusión desde otro proceso, versiones, pausa/detención, recuperación, fallos, procedencia y caída del supervisor. `alembic check` sin diferencias.
+- Seis grabaciones humanas públicas en español chileno: 33,109 s de audio en 30,441 s totales, incluyendo carga por vídeo. Pico RSS muestreado 632,2 MiB. WER simple 2/57 = 3,51%, incluyendo una representación numérica. No equivale a evaluación general de calidad.
+- Silencio, tono y ausencia de pista reconocidos sin transcripción inventada. Cancelación real del proceso a los 1,021 s desde el inicio del ensayo; solicitud al superar un segundo.
+- API real a través del frontend local: importación detenida, pausa, detención, reintento explícito, cuatro resultados de audio y enlace no disponible. Cierre forzado de API durante trabajo y reinicio: motor e intento detenidos, transcripciones previas idénticas en IDs, versiones, segmentos y procedencia.
+- Retirados exclusivamente cinco registros temporales verificados, cuatro copias no compartidas e intermedios por intento. Muestras e informes conservados fuera de Git/OneDrive, en `verification-phase2` bajo la raíz de datos.
+- Aplicación local preparada; motor detenido. API `127.0.0.1:8000`, frontend `127.0.0.1:5180`. Sin remoto, publicación ni puertos externos.
 
 ## Límites y siguiente paso
 
-- Importación manual hasta 2 GiB por defecto; extensión y firma de contenedor comprobadas, sin decodificación ni transcodificación. No se ensayó un archivo real de 2 GiB. La reproducción depende del navegador.
-- Categorías planas. Sin edición global/borrado de nombres del catálogo ni jerarquías. Búsqueda textual literal, no semántica; conserva acentos. Duplicados de URL conservadores, sin prometer equivalencia de todas las variantes de plataforma.
-- Papelera sin purga. No hay limpieza automática; un cierre forzado puede dejar temporales o copias sin fila, conservadas para recuperación. Archivo ausente: reimportar el mismo original. [Operación y recuperación](operations.md).
-- No hay descarga automática de enlaces, FFmpeg, transcripción, trabajador, modelos, Supabase ni chat. Próximo trabajo: Fase 2, con controles manuales y exclusión real de tareas pesadas.
-- El respaldo de PostgreSQL no incluye medios. La restauración integral de biblioteca y archivos sigue pendiente de Fase 7; no está cubierta por las pruebas de reinicio o reintento.
+- Fases 0–3 cerradas; Fase 4 aplazada. Fase 5 lista para revisión de uso; después siguen 6 y 7. Mantener detenida la ejecución al entregar.
+- Audio CPU, visión/síntesis y búsqueda/chat locales con alcance inicial comprobado. Sin Supabase ni instalación de CUDA/cuDNN. Los resultados automáticos y el umbral de búsqueda siguen siendo provisionales.
+- Primera pista de audio. Con varias copias en una fuente, crear una fuente local del archivo elegido; no se selecciona arbitrariamente. Sin diarización.
+- Pausa por vídeo; no hay reanudación parcial dentro de un vídeo. Detener conserva lo confirmado y descarta el resultado incompleto. Modelos liberados entre trabajos.
+- `no_speech` expresa ausencia de voz detectada, no certeza de ausencia de habla. Puede haber errores. Falta evaluar vídeos largos, música, ruido y habla superpuesta.
+- Papelera sin purga. Cierre abrupto puede dejar temporales; limpieza manual por intento, sin borrar originales. Límite de ejecución de 7200 s configurable.
+- Importación hasta 2 GiB por defecto; no se ensayó ese tamaño. Restauración aislada de base y medios comprobada en Fase 7. Los respaldos SQL previos a migraciones no incluyen vídeos; la copia integral sí. No se reinició Windows ni PostgreSQL en este trabajo.
 
-## Entorno verificado
+## Documentación y entorno
 
-Git 2.52.0; Node 24.13.0; npm 11.6.2; Python 3.13.15 (3.14 conservado); PostgreSQL 18.6; VS Code 1.140.0. React 19.3.1, Vite 8.3.5, Tailwind 4.3.3, FastAPI 0.162.0, SQLAlchemy 2.0.55 y Alembic 1.20.1. Dependencias exactas en los archivos de bloqueo existentes.
+[Plan vigente](roadmap.md), [bitácora](bitacora.md), [ADR 0006](decisions/0006-audio-motor-manual.md), [operación](operations.md), [modelos](models.md).
 
-PostgreSQL local con usuario de aplicación sin superusuario/CREATEDB/CREATEROLE y contraseñas scram-sha-256. Hardware observado previamente: 15,6 GiB de RAM visible y RTX 3060 Laptop de 6144 MiB de VRAM; recursos libres variables. pgvector no instalado ni ensayado.
+Histórico: [Fase 0](verification/phase0.md), [Fase 1.1](verification/phase1-1.md), [Fase 1](verification/phase1.md). Conservan fecha y alcance.
+
+Python 3.13.15, PostgreSQL 18.6, Node 24.13.0; React/Vite/Tailwind y FastAPI/SQLAlchemy/Alembic conservados. Paquetes fijados en `backend/requirements.lock`: faster-whisper 1.2.1, CTranslate2 4.8.4, PyAV 16.0.1, imageio-ffmpeg 0.6.0 y dependencias. FFmpeg 7.1 incluido. PyAV 19 se descartó tras un fallo real de compatibilidad.

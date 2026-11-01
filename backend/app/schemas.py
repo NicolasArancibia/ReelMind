@@ -92,6 +92,7 @@ class JobRead(BaseModel):
     id: UUID
     status: str
     created_at: datetime
+    error_message: str | None = None
 
 
 class OrganizationUpdate(SourceMutation):

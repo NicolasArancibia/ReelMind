@@ -17,7 +17,7 @@ from app.models import Source, Tag, Category, ProcessingJob, MediaAsset
 from app.schemas import SourceCreate, SourceMutation, SourcePage, SourceRead, SourceUpdate, url_adapter
 from app.schemas import OrganizationUpdate, QueueUpdate
 
-REVISION = "0002_library"
+REVISION = "0008_graph"
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:5180", "http://localhost:5180",
     "http://127.0.0.1:8000", "http://localhost:8000",
@@ -27,11 +27,25 @@ ALLOWED_ORIGINS = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     get_settings()  # Reject accidental autostart or nonlocal configuration.
+    from app.processing import ManualEngine
+    from app.retrieval import RetrievalEngine
+    app.state.processor = ManualEngine(get_engine())
+    app.state.retrieval = RetrievalEngine(get_engine())
+    try:
+        with get_engine().connect() as connection:
+            migrated = connection.scalar(text("SELECT version_num FROM alembic_version")) == REVISION
+        if migrated:
+            app.state.processor.recover()
+            app.state.retrieval.recover()
+    except SQLAlchemyError:
+        pass  # Health reports missing DB/schema; the library can show the recovery message.
     yield
+    app.state.processor.close()
+    app.state.retrieval.close()
     get_engine().dispose()
 
 
-app = FastAPI(title="ReelMind", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="ReelMind", version="0.4.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -70,9 +84,10 @@ def health(session: Session = Depends(get_session)):
     if revision != REVISION:
         raise HTTPException(503, "Falta actualizar la base local con las migraciones.")
     session.scalar(select(func.count()).select_from(Source))
+    from app.processing import engine_status
     return {
         "status": "ok", "database": "connected", "schema_revision": revision,
-        "processing": {"state": "stopped", "available": False, "autostart": False, "concurrency": 1},
+        "processing": engine_status(session),
     }
 
 
@@ -194,6 +209,8 @@ def update_source(source_id: UUID, payload: SourceUpdate, session: Session = Dep
 @app.delete("/api/sources/{source_id}", response_model=SourceRead)
 def trash_source(source_id: UUID, payload: SourceMutation, session: Session = Depends(get_session)):
     source = locked_source(session, source_id)
+    if source.job and source.job.status == "running":
+        raise HTTPException(409, "Detén el motor antes de enviar esta fuente a la papelera.")
     if source.deleted_at is not None:
         return source  # Retrying a confirmed deletion is harmless.
     check_version(source, payload)
@@ -208,6 +225,8 @@ def restore_source(source_id: UUID, payload: SourceMutation, session: Session = 
         return source
     check_version(source, payload)
     source.deleted_at = None
+    if source.job:
+        source.job.run_id = None  # Restoration never joins a running batch.
     return commit_source(session, source)
 
 
@@ -242,11 +261,21 @@ def queue_source(source_id: UUID, payload: QueueUpdate, session: Session = Depen
         raise HTTPException(409, "Restaura la fuente antes de cambiar la cola.")
     if source.job is None:
         source.job = ProcessingJob()
-    if payload.queued and source.job.status == "cancelled":
+    if source.job.status == "running":
+        raise HTTPException(409, "Detén el motor antes de cambiar este trabajo.")
+    if payload.queued and source.job.status != "pending":
         source.job.created_at = func.clock_timestamp()
+    source.job.run_id = None
+    source.job.error_message = None
     source.job.status = "pending" if payload.queued else "cancelled"
     return commit_source(session, source)
 
 
 from app.media import router as media_router
 app.include_router(media_router)
+from app.processing import router as processing_router
+app.include_router(processing_router)
+from app.retrieval import router as retrieval_router
+app.include_router(retrieval_router)
+from app.projects import router as projects_router
+app.include_router(projects_router)

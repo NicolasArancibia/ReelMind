@@ -5,7 +5,7 @@ export interface Source {
   tags: Label[]
   categories: Label[]
   assets: { id: string; original_name: string; file: { size_bytes: number; checksum: string; mime_type: string } }[]
-  job: { id: string; status: 'pending' | 'cancelled'; created_at: string } | null
+  job: { id: string; status: string; created_at: string; error_message: string | null } | null
   title: string | null
   platform: string
   status: string
@@ -20,7 +20,7 @@ export interface SourcePage { items: Source[]; total: number; active_total: numb
 export interface Health {
   status: string
   database: string
-  processing: { state: string; available: boolean; autostart: boolean; concurrency: number }
+  processing: { state: string; available: boolean; audiovisual_available: boolean; autostart: boolean; concurrency: number; active_source_id: string | null }
 }
 
 export class ApiError extends Error {

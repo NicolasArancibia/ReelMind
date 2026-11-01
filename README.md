@@ -1,6 +1,8 @@
 # ReelMind
 
-Biblioteca personal de vídeos, local en Windows. **Fases 0 y 1 completadas y verificadas:** enlaces y archivos de vídeo, categorías/etiquetas, búsqueda/filtros, papelera y cola persistente sin IA. [Estado y comprobaciones](docs/status.md).
+Biblioteca personal de vídeos, local en Windows. **Fases 0–3 completadas en su alcance inicial: biblioteca, audio, motor manual y ficha audiovisual con evidencias.** Prioridad: terminar la aplicación de escritorio; captura móvil y Supabase aplazados. [Estado y comprobaciones](docs/status.md). El cierre técnico inicial se amplía con el [plan de producto 1.0](docs/roadmap.md#plan-de-cierre-del-producto-10), propuesto para reunir, comprender, guardar, organizar y consultar reels de forma integrada.
+
+**Búsqueda y consultas locales de Fase 5 implementadas y verificadas técnicamente.** Abre **Chat** en la navegación: historial lateral y mensajes en una vista propia. En **Biblioteca disponible** puedes actualizar el índice después de analizar vídeos; escribe un mensaje y pulsa Enter para enviarlo (Mayús+Enter añade línea). Las respuestas muestran pasajes exactos con fuente, versión y tiempo y permiten abrir la ficha. No inician análisis de vídeos, no traducen ni completan datos ausentes. El historial queda en este equipo. [Evidencias y límites](docs/verification/phase5.md).
 
 ## Abrir y cerrar
 
@@ -9,7 +11,7 @@ Biblioteca personal de vídeos, local en Windows. **Fases 0 y 1 completadas y ve
 3. Pega un enlace, añade un nombre opcional y pulsa **Guardar enlace**. Queda guardado en PostgreSQL; no se descarga ni se analiza el vídeo.
 4. Para cerrar la aplicación, usa **[Detener ReelMind.cmd](Detener%20ReelMind.cmd)**. Cerrar solo la pestaña no detiene los procesos. PostgreSQL continúa como servicio local.
 
-Los registros temporales usados para verificar la entrega se retiraron. El motor permanece detenido y todavía no tiene controles de ejecución.
+Los registros temporales de la verificación inicial se retiraron; la revisión visual posterior conserva una muestra pública `female-0.mp4` en la biblioteca. El motor arranca siempre detenido. Controles y transcripciones comprobados en escritorio y tamaño móvil; [evidencias y límites de la verificación](docs/verification/phase2.md).
 
 ## Gestionar tu biblioteca
 
@@ -33,11 +35,22 @@ Los registros temporales usados para verificar la entrega se retiraron. El motor
 - **Archivos:** adjunta un vídeo a un enlace existente o abre sus copias guardadas. Varias fuentes pueden compartir una copia sin perder su procedencia. La reproducción depende del navegador; no hay conversión de formatos.
 - **Organizar:** escribe categorías y etiquetas separadas por comas. Puedes reutilizar nombres o vaciar un campo para retirar asociaciones. Hasta 10 categorías y 20 etiquetas de 60 caracteres por fuente.
 - **Buscar y filtrar:** busca por título, enlace, nombre de archivo, categoría o etiqueta; combina plataforma, tipo, categoría y etiqueta. Limpiar filtros vuelve a mostrar toda la vista.
-- **Pendientes:** consulta el orden de análisis futuro. Quitar de cola conserva la fuente; Encolar la añade al final. Enviar a papelera oculta su pendiente y restaurar recupera su estado anterior.
+- **Pendientes:** consulta el orden de transcripción. Quitar de cola conserva la fuente; Encolar la añade al final. Enviar a papelera oculta su pendiente y restaurar recupera su estado anterior.
 
 La papelera conserva los archivos y no tiene purga. Si falta una copia local, vuelve a importar el mismo archivo para recuperarla. Las etiquetas/categorías son planas y sus nombres sin uso se conservan para reutilizarlos.
 
-**La Fase 1 no analiza ni descarga vídeos de enlaces.** La siguiente fase es audio y motor manual (Fase 2); IA y Supabase esperan sus fases. [Pruebas y límites de esta entrega](docs/verification/phase1.md).
+## Transcribir audio
+
+1. Importa un vídeo o adjunta una copia local a su enlace. Un enlace solo no proporciona audio; no hay descarga automática.
+2. Añade la fuente a **Pendientes** y pulsa **Iniciar**. Se toma únicamente la cola existente en ese momento. Importar o restaurar después espera otro inicio.
+3. **Pausar** termina el vídeo actual y espera; **Reanudar** requiere pulsación. **Detener** cancela el actual sin guardar segmentos incompletos; para reintentarlo pulsa Encolar e Iniciar.
+4. Abre **Ficha y audio** para consultar versiones, tiempos, idioma y modelo. «Sin voz detectada» no garantiza ausencia de habla. Los resultados automáticos pueden tener errores.
+
+Se conserva el historial al reprocesar. Con varias copias adjuntas, importa el archivo elegido como fuente local independiente. Se procesa la primera pista de audio. [Pruebas y cierre visual de Fase 2](docs/verification/phase2.md).
+
+**Incluir visión y síntesis** está seleccionada de forma predeterminada y añade una ficha con evidencias temporales y referencias; desmárcala para procesar solo audio. El motor siempre espera a **Iniciar**. Requiere preparar los modelos explícitamente con `powershell -NoProfile -File .\scripts\prepare-av.ps1`; usa Ollama ya instalado y almacenamiento propio fuera de OneDrive. Mientras no termine la preparación, Iniciar queda deshabilitado en ese modo. Supabase está aplazado; Chat local ya está disponible en su vista propia.
+
+La ficha revisa hasta ocho fotogramas y usa hasta 12 segmentos de audio para sintetizar: puede omitir escenas, acciones o texto. Contrasta sus afirmaciones con las evidencias y el vídeo original. La revisión inicial fue aceptada; los modelos siguen siendo provisionales y no hay evaluación general de calidad. [Estado actual](docs/status.md).
 
 ## Arquitectura conservada
 
@@ -55,7 +68,15 @@ powershell -NoProfile -File .\scripts\backend.ps1 -Action Migrate
 powershell -NoProfile -File .\scripts\start.ps1 -OpenBrowser
 ```
 
-`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. La revisión actual es `0002_library`; `0001_sources` permanece intacta. `start.ps1` sirve la compilación local en 5180 y la API en 8000. No inicia un trabajador de IA.
+`setup.ps1` instala las dependencias fijadas y compila la interfaz. `Migrate` crea un respaldo local antes de aplicar Alembic. La revisión actual es `0005_audiovisual`; las migraciones previas aplicadas permanecen intactas. `start.ps1` sirve la compilación local en 5180 y la API en 8000. El motor arranca detenido; solo Iniciar lanza trabajo pesado.
+
+Para preparar el audio por primera vez, con la aplicación detenida y conexión a Internet:
+
+```powershell
+powershell -NoProfile -File .\scripts\prepare-audio.ps1
+```
+
+Descarga small a la raíz local de datos fuera de OneDrive y registra revisión/hash. Repetir conserva/verifica el modelo. Después la transcripción funciona offline: CPU int8, cuatro hilos. No descarga modelos al abrir ni al pulsar Iniciar. FFmpeg viene con las dependencias fijadas. `REELMIND_AUDIO_TIMEOUT_SECONDS` limita cada vídeo a 7200 s de ejecución por defecto; no es un límite de duración del archivo.
 
 ```powershell
 # Pruebas aisladas en PostgreSQL y consistencia del esquema
@@ -76,6 +97,12 @@ Los scripts inyectan la credencial PostgreSQL cifrada del usuario al proceso Pyt
 Los servicios escuchan solo en `127.0.0.1`; PostgreSQL en loopback. Los datos vivos y secretos están fuera de OneDrive. No hay repositorio remoto ni publicación.
 
 ## Documentación
+
+### Skills locales para Codex
+
+Guardadas en `.agents/skills/`, solo para este proyecto. Para orientar una tarea antes de ejecutarla, escribe **`$reelmind-preflight quiero…`** o **«Preflight: quiero…»**. Recomienda modelo, razonamiento, skills y comprobación; después ajusta la selección de la app si procede y responde «continúa». No cambia el modelo automáticamente ni garantiza un coste exacto.
+
+También disponibles: `writing-plans`, `systematic-debugging`, `impeccable` y `vercel-react-best-practices`, con entradas adaptadas al proyecto. Las referencias se leen solo cuando hacen falta. [Procedencia, límites y verificación](docs/decisions/0008-skills-locales.md). Si el selector no las muestra todavía, inicia otro chat en ReelMind; la alternativa «Preflight: …» queda indicada en AGENTS.
 
 Consultar el **[plan de fases vigente](docs/roadmap.md)** para seguir el proyecto. Se actualiza con el trabajo y las decisiones; el PDF conserva la base original. La **[bitácora](docs/bitacora.md)** registra cada trabajo y [estado](docs/status.md) resume qué funciona y qué sigue.
 
@@ -99,6 +126,16 @@ Consultar el **[plan de fases vigente](docs/roadmap.md)** para seguir el proyect
 | [Verificación Fase 1.1](docs/verification/phase1-1.md) | 34 pruebas, recorrido de interfaz y persistencia |
 | [Biblioteca completa, decisión](docs/decisions/0005-cierre-biblioteca.md) | Copias, clasificación, cola y límites de Fase 1 |
 | [Verificación de Fase 1](docs/verification/phase1.md) | 57 pruebas, interfaz, fallos parciales y reinicio |
+| [Audio y motor manual](docs/decisions/0006-audio-motor-manual.md) | Semántica, procedencia y selección inicial de modelo |
+| [Verificación Fase 2](docs/verification/phase2.md) | 69 pruebas, audio real, recuperación y cierre visual |
 | [Estado](docs/status.md) | Resultado actual y siguiente paso |
 
 Antes de retomar otra sesión, leer AGENTS, README, plan de fases y estado. Al cerrar cada trabajo, actualizar el seguimiento según AGENTS. No confundir los módulos previstos en el plan con funciones ya implementadas.
+
+**Proyectos:** crea un proyecto y asocia fuentes desde su vista propia. Quitar una asociación conserva vídeo y análisis. Grafo manual disponible: relaciona dos fuentes con una nota de evidencia, consulta sus fichas y corrige conservando versiones. Las notas son manuales y no están verificadas automáticamente. [Verificación y límites](docs/verification/phase6.md).
+
+## Respaldo y recuperación
+
+Detén ReelMind y ejecuta `scripts/library-backup.ps1 -Action Backup` desde PowerShell. Guarda base y vídeos juntos, con manifiesto y hashes, fuera de OneDrive. Para comprobar una copia: `scripts/library-backup.ps1 -Action RestoreVerify -Bundle "RUTA_DE_LA_COPIA"`; crea una base y carpeta nuevas, sin sustituir tu biblioteca. Modelos y credenciales se preparan aparte. [Procedimiento vigente](docs/operations.md), [verificación de Fase 7](docs/verification/phase7.md).
+
+Las dependencias quedan en el runtime externo; para reinstalarlas usa `scripts/setup.ps1`. La entrega actual utiliza los lanzadores Windows y navegador local; no incluye instalador EXE. Dependencias/build y recuperación aislada comprobados con los prerrequisitos ya instalados.

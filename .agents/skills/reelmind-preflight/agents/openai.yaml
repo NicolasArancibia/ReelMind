@@ -1,0 +1,4 @@
+interface:
+  display_name: "ReelMind Preflight"
+  short_description: "Recomienda modelo, esfuerzo y skills para la tarea"
+  default_prompt: "Usa $reelmind-preflight para evaluar esta tarea sin ejecutarla."

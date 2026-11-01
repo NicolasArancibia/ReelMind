@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([ValidateSet('Run', 'Migrate', 'Test', 'Check')][string]$Action = 'Run')
+param([ValidateSet('Run', 'Migrate', 'Test', 'Check', 'PrepareSearch')][string]$Action = 'Run')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 $runtime = Get-ReelMindRuntime
@@ -41,6 +41,7 @@ try {
             }
             'Test' { & $pythonPath -m pytest }
             'Check' { & $pythonPath -m alembic check }
+            'PrepareSearch' { & $pythonPath -m app.prepare_search }
         }
         $commandExit = $LASTEXITCODE
     } finally { Pop-Location }
