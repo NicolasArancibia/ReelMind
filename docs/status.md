@@ -4,6 +4,8 @@ Actualizado: 2026-11-01, America/Santiago.
 
 ## Resultado actual
 
+**Descarga manual integrada, 2026-11-01:** Iniciar intenta recuperar reels públicos de Instagram sin copia y después los analiza, uno a uno; guardar/abrir no descarga. Adaptador cancelable bajo reserva pesada; copia validada/deduplicada y conservada si se detiene el análisis. 17 casos dirigidos aprobados, build/pip check correctos. Reel real: 2.199.499 bytes asociados al enlace y transcripción v1 de 25.195 ms/ocho segmentos. Solo se procesó esa fuente; demás pendientes conservados. Sin esquema/modelos nuevos ni cookies de cuentas. [Evidencias y límites](verification/downloads.md), [ADR 0017](decisions/0017-descarga-manual-de-reels.md). Índice de Chat conserva actualización manual; aceptación 1.0 pendiente.
+
 **Aceptación dirigida, 2026-11-01:** reproducidos y corregidos dos fallos: resumen general de una fuente recibía cero fragmentos por el umbral semántico; recargar un chat perdía la fuente/modo elegidos. Resumen acotado con muestreo de hasta ocho fragmentos vigentes, aviso de cobertura, y restauración del último alcance incluso tras saludo/cancelación. Cuatro pruebas dirigidas aprobadas y build correcto; copia y exportación reales conservan aviso/fuente. Recarga real conservó fuente y modo. El caso de resumen recuperó 8/8 fragmentos del reel, pero la explicación fue rechazada por validación y devolvió cuatro citas originales: **calidad del resumen explicativo aún no aceptada**. El usuario añadirá más vídeos; los enlaces nuevos guardados no tienen archivo local y VideoPrueba aún conserva solo el reel anterior. Motor detenido, índice sin pendientes; 1.0 continúa en aceptación. [Detalle](verification/product1.md#aceptación-dirigida-posterior).
 
 

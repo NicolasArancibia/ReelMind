@@ -8,7 +8,7 @@ Para pedir un resumen general, selecciona una **Fuente** en Chat. Se usa una mue
 
 ## Recorrido cotidiano
 
-- **Biblioteca:** incorpora varios archivos/enlaces desde **Incorporar varios reels**. Cada elemento muestra su resultado; guardados/duplicados salen del lote y los pendientes pueden corregirse y reintentarse. Guardar no descarga enlaces ni inicia análisis. Adjunta una copia local cuando solo tengas un enlace.
+- **Biblioteca:** incorpora varios archivos/enlaces desde **Incorporar varios reels**. Cada elemento muestra su resultado; guardados/duplicados salen del lote y los pendientes pueden corregirse y reintentarse. Guardar no descarga enlaces ni inicia análisis. Para reels públicos de Instagram, Iniciar intentará descargar la copia. Si no puede recuperarla, puedes adjuntarla manualmente.
 - **Organizar:** cambia título, resumen revisado, favorito, categorías y etiquetas. Una propuesta desde observaciones existentes requiere revisión. Selecciona varias fuentes para clasificar, asociar a un proyecto o preparar pendientes en una sola operación; el motor sigue detenido.
 - **Ficha y audio:** reproduce la copia local y guarda apuntes, rangos y favoritos. **Guardar destacado** desde Chat conserva la cita exacta junto a tu comentario. Editar añade una versión; archivar/restaurar conserva el historial. Los tiempos abren el momento original cuando hay una única copia reproducible.
 - **Mis ideas:** busca en apuntes y citas, filtra por proyecto/etiqueta/favorito/archivo y vuelve a la ficha. Exporta Markdown o JSON desde la ficha.
@@ -38,7 +38,7 @@ Los registros temporales de la verificación inicial se retiraron; la revisión 
 
 - Conexión real con PostgreSQL, comprobación de la revisión de esquema y estado del motor.
 - Guardado de enlaces HTTP/HTTPS, título opcional, plataforma orientativa y fecha.
-- Consulta paginada de toda la biblioteca y papelera; contadores de ambas. No se descarga contenido externo.
+- Consulta paginada de toda la biblioteca y papelera; contadores de ambas. La descarga de reels públicos de Instagram requiere pulsar Iniciar.
 - Edición de títulos, eliminación recuperable y restauración con protección contra cambios simultáneos.
 - Detección de URL normalizada repetida; validación de entradas y mensajes de conexión/errores.
 - Inicio y detención de los procesos propios; no se altera otra aplicación que use otros puertos.
@@ -52,9 +52,13 @@ Los registros temporales de la verificación inicial se retiraron; la revisión 
 
 La papelera conserva los archivos y no tiene purga. Si falta una copia local, vuelve a importar el mismo archivo para recuperarla. Las etiquetas/categorías son planas y sus nombres sin uso se conservan para reutilizarlos.
 
+## Descargar y analizar enlaces
+
+Guarda los enlaces y añádelos a Pendientes. **Iniciar** recupera los reels públicos de Instagram sin copia y analiza un vídeo cada vez. **Detener** cancela el actual; **Pausar** termina el vídeo actual. Si la copia ya quedó asociada, reintentar no la descarga de nuevo. Si Instagram exige acceso o falla, el elemento muestra un motivo y permite adjuntar copia; los siguientes pendientes continúan. Guardar o abrir la app nunca inicia la descarga. Después del análisis, actualiza el índice de Chat manualmente. [Comprobaciones y límites](docs/verification/downloads.md).
+
 ## Transcribir audio
 
-1. Importa un vídeo o adjunta una copia local a su enlace. Un enlace solo no proporciona audio; no hay descarga automática.
+1. Importa un vídeo o adjunta una copia local a su enlace. Un reel público de Instagram sin copia se intenta descargar al pulsar Iniciar; para otros enlaces, adjunta un archivo.
 2. Añade la fuente a **Pendientes** y pulsa **Iniciar**. Se toma únicamente la cola existente en ese momento. Importar o restaurar después espera otro inicio.
 3. **Pausar** termina el vídeo actual y espera; **Reanudar** requiere pulsación. **Detener** cancela el actual sin guardar segmentos incompletos; para reintentarlo pulsa Encolar e Iniciar.
 4. Abre **Ficha y audio** para consultar versiones, tiempos, idioma y modelo. «Sin voz detectada» no garantiza ausencia de habla. Los resultados automáticos pueden tener errores.

@@ -40,7 +40,7 @@ export default function AudioPanel({ onChange }: { onChange: () => void }) {
   return <aside className="control-panel audio-panel">
     <div className="control-top"><span className="small-tag" role="status">{state ? engineNames[state.state] : 'Sin conexión'}</span></div>
     <h2>Vuelve a tus ideas.</h2>
-    <p>Analiza las copias locales de tus pendientes. Cada inicio toma la cola actual; guardar o importar nunca activa el análisis.</p>
+    <p>Al iniciar, descarga los reels públicos de Instagram que no tengan copia y analiza un vídeo cada vez. Guardar enlaces no descarga ni analiza.</p>
     <label className="dialog-help"><input type="checkbox" checked={audiovisual} disabled={busy || !idle} onChange={event => setAudiovisual(event.target.checked)} /> Incluir visión y síntesis</label>
     {audiovisual && <p className="dialog-help">Revisa fotogramas muestreados y audio. Puede omitir escenas o texto; contrasta la ficha con el original.</p>}
     <div className="audio-controls">

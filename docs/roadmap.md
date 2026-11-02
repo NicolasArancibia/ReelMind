@@ -280,3 +280,9 @@ Este plan describe hacia dónde vamos; el estado resume qué funciona hoy; la bi
 ## Revisión de cada fase
 
 Registrar pruebas como aprobadas, fallidas o pendientes. La revisión humana comprueba fidelidad de los análisis y comodidad de uso. No cerrar con fallos de pérdida de datos, análisis automático sin orden o flujo central roto. Los umbrales de rendimiento se fijarán con pruebas, no con promesas previas.
+
+## Descarga manual desde enlaces — 2026-11-01
+
+Autorizada por el usuario tras preflight. Alcance: reels públicos de Instagram, descargados únicamente al pulsar Iniciar en la cola existente; descarga → copia validada por hash → análisis secuencial existente. Sin cuentas, cookies de navegador, servicios pagados ni descarga al guardar/abrir. Implementar adaptador cancelable con límites, publicación idempotente y errores recuperables por elemento; mostrar etapa y conservar originales. Comprobar deduplicación, detención/exclusión, reintento y un enlace real. Cierre: copia real asociada al enlace y paso por el motor, o límite externo documentado sin declarar recuperación exitosa. Índice de Chat conserva su actualización manual.
+
+Descarga implementada y comprobada en su alcance inicial: 17 casos dirigidos, compilación y un reel real descargado/asociado/transcrito; resto de cola conservado. Ver [ADR 0017](decisions/0017-descarga-manual-de-reels.md) y [evidencias/límites](verification/downloads.md). La necesidad anterior de descargar manualmente todos los casos queda sustituida para reels públicos recuperables; archivos adjuntos siguen siendo alternativa. Aceptación amplia y calidad de resúmenes/comparaciones siguen pendientes.

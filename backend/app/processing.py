@@ -38,7 +38,7 @@ def ready():
 
 def run_audio(asset, attempt_id, cancelled, mode='audio'):
     work = storage_path(f"work/{attempt_id}")
-    work.mkdir(parents=True, exist_ok=False)
+    work.mkdir(parents=True, exist_ok=True)
     path = storage_path(asset.file.local_path)
     if not path.is_file():
         raise FileNotFoundError()
@@ -190,11 +190,19 @@ class ManualEngine:
                         return session.get(EngineState, 1).state == "stop_requested"
                 result, error, status = None, None, "completed"
                 try:
+                    from app.downloads import recover_video,attach_video,DownloadUnavailable
+                    download_provenance={}
+                    if asset is None and not source.assets and source.original_url:
+                        path,download_provenance=recover_video(source.original_url,attempt_id,cancelled)
+                        asset=attach_video(connection,source_id,path,cancelled)
                     if asset is None:
                         status = "unavailable"
                         error = "Adjunta una copia local del vídeo para transcribir." if not source.assets else "Hay varias copias asociadas; crea una fuente local del archivo que deseas transcribir."
                     else:
                         result = self.runner(asset, attempt_id, cancelled) if mode == 'audio' else run_audio(asset, attempt_id, cancelled, mode)
+                        result['provenance'].update(download_provenance)
+                except DownloadUnavailable as exc:
+                    status, error = "unavailable", str(exc)
                 except Cancelled:
                     status, error = "stopped", "Detenido por solicitud. Añade a pendientes para reintentar."
                 except Exception:

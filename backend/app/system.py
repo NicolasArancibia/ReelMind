@@ -33,7 +33,7 @@ def status(session:Session=Depends(get_session)):
         import re
         try:
             value=json.loads(storage_path(f'work/{attempt.id}/progress.json').read_text(encoding='utf-8'))['stage']
-            if value in {'audio','synthesis','references'} or re.fullmatch(r'vision-[0-7]',value):stage=value
+            if value in {'download','audio','synthesis','references'} or re.fullmatch(r'vision-[0-7]',value):stage=value
         except (OSError,ValueError,KeyError,TypeError):pass
     backups=root.parent/'backups'
     copies=sorted([p for p in backups.glob('library-*') if p.is_dir() and (p/'manifest.json').is_file()],key=lambda p:p.stat().st_mtime,reverse=True)[:10] if backups.exists() else []
