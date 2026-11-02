@@ -9,7 +9,7 @@ interface Hit {
 }
 interface Task {
   id: string; action: string; query: string; session_id: string | null; status: string
-  help?:string; claims?: {text:string;quote:string;chunk_id:string}[]; fallback?:boolean; scope?: {project_id?:string|null};
+  help?:string; claims?: {text:string;quote:string;chunk_id:string}[]; fallback?:boolean; scope?: {project_id?:string|null;source_ids?:string[];answer_mode?:string}; coverage?:{method:string;sampled:number;available:number}|null;
   error_message: string | null; hits: Hit[]; selected: Hit[]; added: number | null; total: number | null
 }
 interface IndexStatus { ready: boolean; total: number; missing: number; current: Task | null }
@@ -38,6 +38,7 @@ export default function SearchPanel({ onSource, visible, contentRevision }: { on
   const [sessionId, setSessionId] = useSessionValue('reelmind.chat')
   const [projects, setProjects] = useState<{id:string;name:string}[]>([])
   const [projectId,setProjectId]=useState('')
+  const [historyLoading,setHistoryLoading]=useState(!!sessionId)
   const [mode,setMode]=useState('grounded')
   const [historyQuery,setHistoryQuery]=useState('')
   const [showArchived,setShowArchived]=useState(false)
@@ -56,11 +57,15 @@ export default function SearchPanel({ onSource, visible, contentRevision }: { on
   useEffect(() => { if (messages.current) messages.current.scrollTop = messages.current.scrollHeight }, [turns, task?.id, task?.status])
   const running = active(task)
   const localHelp=['hola','buenas','ayuda','qué puedes hacer','que puedes hacer'].includes(query.toLowerCase().replace(/^[ ¿?¡!.,]+|[ ¿?¡!.,]+$/g,''))
-  const busy = sending || running
+  const busy = sending || running || historyLoading
   const selectedSession=sessions.find(s=>s.id===sessionId)
   useEffect(()=>{const c=new AbortController();void request<{id:string;name:string}[]>('/projects',{signal:c.signal}).then(setProjects).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[visible,contentRevision])
   useEffect(()=>{if(!visible)return;const c=new AbortController();void request<{items:{id:string;title:string|null;assets:{original_name:string}[];original_url:string|null}[];total:number}>(`/sources?limit=20&offset=${sourceOffset}&q=${encodeURIComponent(sourceQuery)}${projectId?'&project_id='+projectId:''}`,{signal:c.signal}).then(p=>{setSourceTotal(p.total);setSources(p.items.map(s=>({id:s.id,label:s.title||s.assets[0]?.original_name||s.original_url||'Fuente'})))}).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[visible,projectId,contentRevision,sourceQuery,sourceOffset])
-  useEffect(()=>{if(!sessionId)return;const c=new AbortController();void request<Task[]>(`/retrieval/sessions/${sessionId}`,{signal:c.signal}).then(rows=>{setTurns(rows);setProjectId(rows[0]?.scope?.project_id||'')}).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[sessionId])
+  useEffect(()=>{if(!sessionId){setHistoryLoading(false);return}const c=new AbortController();setHistoryLoading(true);void request<Task[]>(`/retrieval/sessions/${sessionId}`,{signal:c.signal}).then(rows=>{
+    if(c.signal.aborted)return
+    const scope=[...rows].reverse().find(row=>row.scope?.source_ids!==undefined)?.scope
+    setTurns(rows);setProjectId(rows[0]?.scope?.project_id||'');setSourceFilter(scope?.source_ids?.[0]||'');setMode(scope?.answer_mode||'grounded')
+  }).catch(e=>{if(!c.signal.aborted)setError(e.message)}).finally(()=>{if(!c.signal.aborted)setHistoryLoading(false)});return()=>c.abort()},[sessionId])
   async function changeConversation(archive:boolean){if(!selectedSession)return;try{await request(`/retrieval/sessions/${sessionId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:rename.trim()||selectedSession.title,archived:archive,expected_title:selectedSession.title,expected_archived:selectedSession.archived})});setRename('');setSessionId('');setTurns([]);await refresh()}catch(e){setError(e instanceof Error?e.message:'No se pudo guardar.')}}
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
@@ -106,6 +111,7 @@ export default function SearchPanel({ onSource, visible, contentRevision }: { on
   async function start(action: 'index' | 'search' | 'chat') {
     setSending(true); setError('')
     try {
+      if(action!=='index'&&sessionId&&!turns.length)throw new Error('No se pudo recuperar el alcance de esta conversación. Recarga o abre un chat nuevo antes de consultar.')
       const next = await request<{ id: string }>('/retrieval/tasks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, query, session_id: action === 'chat' && sessionId ? sessionId : null, project_id: projectId || null, source_ids: sourceFilter ? [sourceFilter] : [], answer_mode: mode }),
@@ -122,7 +128,9 @@ export default function SearchPanel({ onSource, visible, contentRevision }: { on
   }
 
   async function loadHistory(id: string) {
+    if(id&&id===sessionId)return
     ++historySequence.current
+    setHistoryLoading(!!id)
     if(!id){setShowArchived(false);setHistoryQuery('');setHistoryOffset(0)}
     setSessionId(id); setTurns([]); setTask(null); setError(''); setQuery(''); setSourceFilter(''); setProjectId(sessions.find(s=>s.id===id)?.project_id||'')
 
@@ -148,10 +156,11 @@ export default function SearchPanel({ onSource, visible, contentRevision }: { on
           <div className="chat-user"><span>Tú</span><p>{turn.query}</p></div>
           <div className="chat-assistant"><span>ReelMind</span>{turn.status === 'completed' ? <>
             <p>{turn.help || (turn.selected.length ? turn.claims?.length ? 'Respuesta basada en tus fuentes:' : 'Citas originales relacionadas con tu pregunta:' : 'No encuentro evidencia suficiente en tus vídeos para responder a esto. Puedes reformularlo o añadir y analizar una fuente relacionada.')}</p>
+            {turn.coverage&&<p className="dialog-help">Muestra temporal: {turn.coverage.sampled} de {turn.coverage.available} fragmentos indexados. La respuesta puede usar solo parte; no representa el vídeo completo.</p>}
             {turn.claims?.map((claim,i)=><p className="grounded-claim" key={i}>{claim.text} <small>[{turn.selected.findIndex(h=>h.chunk_id===claim.chunk_id)+1}]</small></p>)}
             {turn.fallback&&<p className="dialog-help">La explicación no pasó la validación. Se conservan solo citas originales.</p>}
             {turn.selected.map(h => <details className="chat-source" key={h.chunk_id} open><summary>Fuente · {h.origin.kind === 'audio' ? 'Audio' : h.origin.kind==='note'?'Apunte':'Visual'} · {timestamp(h.time_ms ?? h.start_ms ?? 0)}</summary><Citation hit={h} onSource={onSource} /></details>)}
-            <button className="secondary-button" onClick={()=>void navigator.clipboard.writeText([turn.help||'',...(turn.claims||[]).map(c=>c.text),...turn.selected.map(h=>`${h.content}\nFuente: ${h.title} (${h.source_id}) · ${h.origin.kind} v${h.origin.version} · ${timestamp(h.time_ms??h.start_ms??0)}`)].filter(Boolean).join('\n\n')||'Sin evidencia suficiente.').catch(()=>setError('No se pudo copiar. Puedes exportar el chat desde Gestionar conversación.'))}>Copiar respuesta con citas</button>
+            <button className="secondary-button" onClick={()=>void navigator.clipboard.writeText([turn.coverage?`Muestra temporal: ${turn.coverage.sampled} de ${turn.coverage.available} fragmentos indexados. La respuesta puede usar solo parte; no representa el vídeo completo.`:'',turn.help||'',...(turn.claims||[]).map(c=>c.text),...turn.selected.map(h=>`${h.content}\nFuente: ${h.title} (${h.source_id}) · ${h.origin.kind} v${h.origin.version} · ${timestamp(h.time_ms??h.start_ms??0)}`)].filter(Boolean).join('\n\n')||'Sin evidencia suficiente.').catch(()=>setError('No se pudo copiar. Puedes exportar el chat desde Gestionar conversación.'))}>Copiar respuesta con citas</button>
           </> : <p role="status">{turn.error_message || (task?.status === 'stop_requested' ? 'Deteniendo…' : 'Revisando tu biblioteca…')}</p>}</div>
         </div>)}
         {task?.action === 'search' && task.status==='completed' && <section><h3>Fragmentos encontrados</h3>{task.hits.length?task.hits.map(h=><Citation key={h.chunk_id} hit={h} onSource={onSource}/>):<p>No hay evidencia suficiente para esta búsqueda.</p>}</section>}

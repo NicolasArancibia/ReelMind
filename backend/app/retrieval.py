@@ -118,7 +118,7 @@ class RetrievalEngine:
                 else:
                     chat=ChatSession(title=query[:120],project_id=project_id);session.add(chat);session.flush();session_id=chat.id
                 task=RetrievalTask(action='chat',status='completed',query=query,session_id=session_id,profile_id='local-help',finished_at=func.clock_timestamp(),
-                    result={'help':help_text,'scope':{'project_id':str(project_id) if project_id else None}})
+                    result={'help':help_text,'scope':{'project_id':str(project_id) if project_id else None,'source_ids':[str(i) for i in (source_ids or [])],'answer_mode':answer_mode}})
                 session.add(task);session.flush();task_id=task.id;session.commit();return task_id
         if not ready(get_settings().data_root): raise HTTPException(409,'Falta preparar los modelos de búsqueda locales.')
         prepared=manifest(get_settings().data_root)
@@ -162,7 +162,7 @@ class RetrievalEngine:
             if self.shutdown.is_set(): return True
             with Session(connection) as session: return session.get(RetrievalTask,task_id).status=='stop_requested'
         try:
-            result={}; state='completed'; error=None
+            result={}; scope={}; state='completed'; error=None
             try:
                 with Session(connection) as session:
                     task=session.get(RetrievalTask,task_id); action,query=task.action,task.query
@@ -190,11 +190,17 @@ class RetrievalEngine:
                     result={'added':len(rows),'total':total}
                     result['added']=added
                 else:
-                    vector=vectors(self.runner({'action':'embed','texts':[context]},cancelled)['vectors'],1)[0]
+                    from app.retrieval_data import overview_requested,sampled_overview
+                    overview=action=='chat' and len(scope.get('source_ids',[]))==1 and overview_requested(query)
+                    vector=None if overview else vectors(self.runner({'action':'embed','texts':[context]},cancelled)['vectors'],1)[0]
+                    coverage=None
                     with Session(connection) as session:
-                        hits=ranked(session,prepared['profile_id'],vector,limit=6,project_id=scope.get('project_id'),source_ids=scope.get('source_ids'))
+                        if overview:
+                            hits,total=sampled_overview(session,prepared['profile_id'],scope['source_ids'],scope.get('project_id'))
+                            coverage={'method':'temporal_sample','sampled':len(hits),'available':total}
+                        else:hits=ranked(session,prepared['profile_id'],vector,limit=6,project_id=scope.get('project_id'),source_ids=scope.get('source_ids'))
                         candidates=hydrate(session,hits)
-                    result={'hits':hits,'selected':[],'threshold':.5,'scope':scope}
+                    result={'hits':hits,'selected':[],'threshold':None if overview else .5,'scope':scope,'coverage':coverage}
                     if action=='chat' and candidates:
                         response=self.runner({'action':'select','query':query,'context':'\n'.join(reversed(previous)),'hits':candidates,'mode':scope.get('answer_mode','grounded')},cancelled)
                         selected=response['selected']
@@ -214,7 +220,7 @@ class RetrievalEngine:
                     try:
                         with session.begin_nested(): save_index(session,prepared,rows,values)
                     except Exception: state,error='failed','No se pudo guardar el índice; se conserva la versión anterior.'
-                task.status=state; task.error_message=error; task.result=result if state=='completed' else {}
+                task.status=state; task.error_message=error; task.result=result if state=='completed' else {'scope':scope}
                 task.finished_at=func.clock_timestamp(); session.commit()
         finally: self.lock.release(connection)
 
@@ -239,7 +245,7 @@ def task_read(session,task):
         'created_at':task.created_at,'error_message':task.error_message,'profile_id':task.profile_id,
         'hits':hits,'selected':[h for h in hits if h['chunk_id'] in selected],
         'claims':[claim for claim in task.result.get('claims',[]) if claim.get('chunk_id') in {h['chunk_id'] for h in hits}], 'fallback':task.result.get('fallback',False),'help':task.result.get('help'),
-        'added':task.result.get('added'),'total':task.result.get('total'),'scope':task.result.get('scope',{})}
+        'added':task.result.get('added'),'total':task.result.get('total'),'scope':task.result.get('scope',{}),'coverage':task.result.get('coverage')}
 
 
 @router.get('/status')
@@ -304,6 +310,8 @@ def export_session(session_id:UUID,session:Session=Depends(get_session)):
     body='# '+row.title+'\n'
     for task in session.scalars(select(RetrievalTask).where(RetrievalTask.session_id==session_id).order_by(RetrievalTask.created_at)):
         rendered=task_read(session,task);body+='\n## Tú\n'+task.query+'\n\n## ReelMind\n'
+        if rendered.get('coverage'):
+            coverage=rendered['coverage'];body+=f"Muestra temporal: {coverage['sampled']} de {coverage['available']} fragmentos indexados. La respuesta puede usar solo parte; no representa el vídeo completo.\n\n"
         for claim in rendered.get('claims',[]):body+=claim['text']+'\n'
         for hit in rendered['selected']:body+=hit['content']+f"\nFuente: {hit['source_id']} · {hit['origin']} · ms {hit['time_ms'] if hit['time_ms'] is not None else hit['start_ms']}\n"
         if rendered.get('help'):body+=rendered['help']+'\n'

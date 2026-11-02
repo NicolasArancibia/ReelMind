@@ -22,3 +22,7 @@ El usuario autorizó implementar el plan 8–14 completo. Se conserva la priorid
 ## Consecuencias
 
 Se puede buscar, exportar y recuperar el conocimiento propio sin alterar el material original. Las copias completas incluyen notas y relaciones; JSON/Markdown son exportaciones legibles, no sustituyen SQL+medios. Los modelos no se incluyen en los respaldos: una raíz restaurada necesita preparación explícita antes de ejecutar inferencia. No hay EXE autónomo ni instalación automática de PostgreSQL/Node/modelos. [Verificación y límites](../verification/product1.md).
+
+## Ajuste durante aceptación — 2026-11-01
+
+Un resumen real de una fuente seleccionada quedó sin candidatos por el umbral semántico, pese a existir evidencia. Para ese caso general se selecciona una muestra temporal de hasta ocho fragmentos vigentes, sin rebajar el umbral de preguntas concretas ni inventar una puntuación. La cobertura parcial se comunica también al exportar. El historial restaura el último filtro de fuente y modo; consultas detenidas y saludos conservan ese alcance. No hay cambio de esquema, modelos o infraestructura. La aceptación con una colección más amplia continúa pendiente.

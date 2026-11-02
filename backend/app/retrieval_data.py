@@ -55,13 +55,36 @@ def snapshots(session):
                 'start_ms':row.start_ms,'end_ms':row.end_ms,'time_ms':None})
     return result
 
-def ranked(session,profile,query_vector,limit=8,min_score=.5,project_id=None,source_ids=None):
-    distance=ChunkEmbedding.embedding.op('OPERATOR(public.<=>)',return_type=Float)(bindparam('query_vector',query_vector,type_=Vector(1024)))
+def scoped_chunks(project_id=None,source_ids=None):
     query=live_chunks()
     if project_id:
         from app.models import ProjectSource,Project
         query=query.where(ContentChunk.source_id.in_(select(ProjectSource.source_id).join(Project).where(ProjectSource.project_id==UUID(str(project_id)),Project.archived_at.is_(None))))
     if source_ids:query=query.where(ContentChunk.source_id.in_([UUID(str(i)) for i in source_ids]))
+    return query
+
+
+def overview_requested(query):
+    import re,unicodedata
+    plain=''.join(c for c in unicodedata.normalize('NFD',query.casefold()) if not unicodedata.combining(c)).lstrip(' ¿¡')
+    return bool(re.match(r'^(resume(?:n|me)?\b|haz(?:me)? (?:un )?resumen\b|de que trata\b|que temas\b)',plain))
+
+
+def sampled_overview(session,profile,source_ids,project_id=None):
+    """A bounded temporal sample for an explicit single-source overview, not a similarity score."""
+    order=(func.coalesce(ContentChunk.time_ms,ContentChunk.start_ms,0),ContentChunk.ordinal,ContentChunk.id)
+    sample=scoped_chunks(project_id,source_ids).with_only_columns(ContentChunk.id,
+        func.row_number().over(order_by=order).label('position'),func.count().over().label('total'))\
+        .join(ChunkEmbedding,ChunkEmbedding.chunk_id==ContentChunk.id).where(ChunkEmbedding.profile_id==profile).subquery()
+    rows=session.execute(select(sample.c.id,sample.c.total).where(or_(
+        *(sample.c.position==func.floor((sample.c.total-1)*i/7)+1 for i in range(8))))
+        .order_by(sample.c.position).limit(8)).all()
+    return [{'chunk_id':str(row.id),'score':None} for row in rows],(rows[0].total if rows else 0)
+
+
+def ranked(session,profile,query_vector,limit=8,min_score=.5,project_id=None,source_ids=None):
+    distance=ChunkEmbedding.embedding.op('OPERATOR(public.<=>)',return_type=Float)(bindparam('query_vector',query_vector,type_=Vector(1024)))
+    query=scoped_chunks(project_id,source_ids)
     rows=session.execute(query.add_columns(distance.label('distance')).join(ChunkEmbedding,ChunkEmbedding.chunk_id==ContentChunk.id)
         .where(ChunkEmbedding.profile_id==profile).order_by(distance,ContentChunk.id).limit(limit)).all()
     return [{'chunk_id':str(row.id),'score':round(1-float(d),6)} for row,d in rows if 1-float(d)>=min_score]

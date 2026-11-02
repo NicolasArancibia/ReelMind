@@ -175,3 +175,48 @@ def test_retrieval_respects_current_project_membership(client,indexed_source):
     assert len(query()['selected'])==1
     client.delete(url)
     assert query()['selected']==[]
+
+
+def test_scoped_summary_uses_partial_evidence_without_similarity_gate(client,indexed_source):
+    run(client,'index');calls=[]
+    def runner(payload,cancelled):
+        calls.append(payload['action'])
+        if payload['action']=='embed':return {'vectors':[[0.0,1.0]+[0.0]*1022]}
+        return {'selected':[payload['hits'][0]['chunk_id']]}
+    app.state.retrieval.runner=runner
+    def ask(query):
+        response=client.post('/api/retrieval/tasks',json={'action':'chat','query':query,'source_ids':[indexed_source['id']],'answer_mode':'extractive'})
+        assert response.status_code==202,response.text
+        finish(app.state.retrieval)
+        return client.get('/api/retrieval/tasks/'+response.json()['id']).json()
+    summary=ask('Resume los temas de este reel.')
+    assert summary['selected'][0]['content']=='Texto comprobado' and calls==['select']
+    assert summary['coverage']=={'method':'temporal_sample','sampled':1,'available':1}
+    assert summary['hits'][0]['score'] is None
+    unrelated=ask('¿Cuánta harina lleva el pan?')
+    assert unrelated['selected']==[] and unrelated['coverage'] is None
+    assert 'Muestra temporal: 1 de 1' in client.get('/api/retrieval/sessions/'+summary['session_id']+'/export').text
+    greeting=client.post('/api/retrieval/tasks',json={'action':'chat','query':'hola','session_id':summary['session_id'],'source_ids':[indexed_source['id']],'answer_mode':'extractive'})
+    help_task=client.get('/api/retrieval/tasks/'+greeting.json()['id']).json()
+    assert help_task['scope']['source_ids']==[indexed_source['id']] and help_task['scope']['answer_mode']=='extractive'
+
+
+def test_temporal_sample_is_bounded_live_and_preserves_stopped_scope(client,indexed_source,database):
+    from app.models import NoteRevision
+    from app.retrieval_data import sampled_overview
+    from uuid import uuid4
+    with Session(database[0]) as session:
+        session.add_all([NoteRevision(id=uuid4(),version=1,source_id=UUID(indexed_source['id']),content=f'Idea {i}',start_ms=i*100,end_ms=i*100+1) for i in range(20)])
+        session.commit()
+    run(client,'index')
+    with Session(database[0]) as session:
+        hits,total=sampled_overview(session,PROFILE['profile_id'],[indexed_source['id']])
+        assert total==21 and len(hits)==8 and len({h['chunk_id'] for h in hits})==8
+        chunks=hydrate(session,hits);assert chunks[-1]['start_ms']==1900
+        assert sampled_overview(session,'another-profile',[indexed_source['id']])==([],0)
+        assert sampled_overview(session,PROFILE['profile_id'],[str(uuid4())])==([],0)
+    app.state.retrieval.runner=lambda payload,cancelled:(_ for _ in ()).throw(Cancelled())
+    response=client.post('/api/retrieval/tasks',json={'action':'chat','query':'Resume este reel','source_ids':[indexed_source['id']],'answer_mode':'extractive'})
+    finish(app.state.retrieval)
+    stopped=client.get('/api/retrieval/tasks/'+response.json()['id']).json()
+    assert stopped['status']=='stopped' and stopped['scope']['source_ids']==[indexed_source['id']]

@@ -188,6 +188,12 @@ Bloques **8–13 implementados** en el alcance funcional descrito abajo; ver [co
 
 **14 en aceptación:** pruebas dirigidas, compilación, navegación real y recuperación exacta ejecutadas; el usuario aún debe completar el recorrido con su colección habitual y valorar respuestas/resúmenes/comparaciones. No se marca 1.0 aceptada. No se ensayó una biblioteca grande ni otra máquina. Destino de respaldo fuera del disco y retención automática quedan sujetos a elección del usuario; no hay automatización configurada. El plan original de bloques se conserva como criterio de aceptación, sin volver a diseñarlo.
 
+### Aceptación dirigida en curso — 2026-11-01
+
+Alcance: comprobar resumen de una fuente personal, conservación del alcance al recargar y exportación/citas; reutilizar las pruebas de integridad/recuperación aprobadas. Corregir únicamente fallos reproducidos y contrastar el resumen con evidencias. El usuario añadirá más reels en VideoPrueba para continuar con comparación y variedad de audio/temas. Los enlaces sin archivo se conservan como enlaces y no permiten análisis de contenido.
+
+Hallazgos corregidos: resumen general de una fuente seleccionada recibía cero fragmentos por el umbral semántico; recargar historial perdía el filtro de fuente. Se añade muestreo temporal acotado solo para peticiones generales de resumen/temas con una fuente seleccionada, aviso de cobertura y recuperación del último alcance/modo. Cuatro pruebas dirigidas aprobadas; una se repitió tras extender saludo/exportación. No se repite la suite histórica. Comprobación real: alcance/fuente/modo conservados al recargar, copia/exportación con cobertura; el resumen recuperó ocho evidencias pero la explicación volvió a citas por validación. Recuperación corregida; calidad explicativa y comparación siguen pendientes de colección representativa y revisión del usuario. No se acepta 1.0 todavía.
+
 ### Orden de ejecución y cierre por bloque
 
 **8 — Base estable y punto de recuperación del código. Primero, alcance acotado.**

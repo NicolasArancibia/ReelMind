@@ -4,6 +4,8 @@ Biblioteca personal de vídeos, local en Windows: reunir reels, analizar su cont
 
 **Chat local con fuentes.** Abre **Chat**, actualiza manualmente el índice en **Biblioteca disponible** después de analizar vídeos o editar apuntes, y escribe tu mensaje. Enter envía y Mayús+Enter añade línea. Puedes consultar toda la biblioteca, un proyecto o una fuente. **Explicar con citas** responde en español con el modelo local; **Solo citas originales** conserva los pasajes literales. La explicación vuelve a citas si no pasa la validación. Revisa siempre el original: las respuestas pueden contener errores. [Comprobaciones actuales y límites](docs/verification/product1.md).
 
+Para pedir un resumen general, selecciona una **Fuente** en Chat. Se usa una muestra temporal acotada y se indica su cobertura; el texto puede apoyarse solo en parte de ella. La conversación recupera su última fuente y modo al recargar. La calidad de resumen/comparación continúa en aceptación con una colección más amplia.
+
 ## Recorrido cotidiano
 
 - **Biblioteca:** incorpora varios archivos/enlaces desde **Incorporar varios reels**. Cada elemento muestra su resultado; guardados/duplicados salen del lote y los pendientes pueden corregirse y reintentarse. Guardar no descarga enlaces ni inicia análisis. Adjunta una copia local cuando solo tengas un enlace.
