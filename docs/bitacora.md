@@ -185,3 +185,9 @@ Copiar al inicio del registro y completar; esta plantilla no representa trabajo 
 - Autorizado integrar descarga→análisis manual y secuencial. yt-dlp 2026.10.26 fijado solo en runtime local; adaptador separado sin secretos de DB/cuentas, controles de red pública, tamaño/tiempo y detención por Job Object. Copia asociada por hash antes de analizar; reintentos reutilizan copia y fallos por elemento no frenan cola. Sin migración ni modelos nuevos.
 - Corregido transporte tras comparar extracción estándar: era necesario conservar cabeceras/cookies anónimas. Reel real recuperado y transcrito con trabajador real, únicamente esa fuente. 17 casos dirigidos aprobados, build y pip check correctos. [Verificación](verification/downloads.md). No se afirma descarga universal ni fidelidad humana del nuevo audio.
 - Documentados alcance público de Instagram, alternativa de adjuntar archivo y temporales para revisión. Resto de pendientes preservado, no ejecución automática; siguiente paso: usar Iniciar con los reels guardados y continuar aceptación de contenido/Chat.
+
+## 2026-11-01 — Respaldo autorizado en GitHub
+
+- Usuario indicó el repositorio NicolasArancibia/ReelMind para guardar el proyecto. Remoto inicialmente vacío, acceso Git comprobado; añadido origin y enviada main sin force ni cambios de visibilidad/permisos. Primer envío 26c1e42 confirmado mediante git ls-remote.
+- Revisión de 593 objetos del historial sin archivos de datos/credenciales ni patrones de secretos detectados. No se subieron vídeos, modelos, base, respaldos o runtime local. Ninguna compilación, análisis o prueba de producto repetida por este encargo.
+- Estado documentado; cambios futuros siguen requiriendo commit/push para reflejarse en GitHub. El respaldo SQL/medios conserva su función independiente de recuperar la biblioteca.
